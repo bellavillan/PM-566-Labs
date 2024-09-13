@@ -2,6 +2,7 @@
 title: "Lab 3"
 format: html
 editor: visual
+embed-resources: true
 ---
 
 ## Lab 3 - Isabella Villanueva
