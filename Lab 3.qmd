@@ -6,7 +6,7 @@ editor: visual
 
 ## Lab 3 - Isabella Villanueva
 
-##1. Read in the data
+## 1. Read in the data
 
 ```{r}
 download.file(
@@ -20,7 +20,7 @@ met <- data.table::fread(file.path("~", "Downloads", "met_all.gz"))
 met <- as.data.frame(met)
 ```
 
-##2. Check the dimensions, headers, footers.
+## 2. Check the dimensions, headers, footers.
 
 **How many columns, rows are there?**
 
@@ -32,7 +32,7 @@ Columns: 2,377,343
 
 Rows: 30
 
-##3. Take a look at the variables.
+## 3. Take a look at the variables.
 
 **What are the names of the key variables related to our question of interest?**
 
@@ -52,7 +52,7 @@ Based on this lab's objective of finding the weather station with the highest el
 table(str(met))
 ```
 
-##4. Take a closer look at the key variables.
+## 4. Take a closer look at the key variables.
 
 ```{r}
 table(met$year)
@@ -103,7 +103,7 @@ summary(met$wind.sp)
 **How many missing values are there in the wind.sp variable?**
 Using the maximum value of this table and removing the 9999 values to be NA, the highest weather station is the 36.
 
-##5. Check the data against an external data source.
+## 5. Check the data against an external data source.
 **Where was the location for the coldest temperature readings (-17.2C)? Do these seem reasonable in context?**
 
 Checking the latitude and longitude coordinates found from this table: 
@@ -117,7 +117,7 @@ The coordinates: (38.767,	-104.3) pinpointed a location in Yoder, Colorado, just
 **Does the range of values for elevation make sense? Why or why not?**
 The data was collected in August, which would not be reasonable in the context of Colorado in late summer.
 
-##6. Calculate summary statistics
+## 6. Calculate summary statistics
 ```{r}
 elev <- met[which(met$elev == max(met$elev, na.rm = TRUE)), ]
 summary(elev)
@@ -163,7 +163,7 @@ cor(elev$temp, elev$day, use="complete")
 ## [1] -0.003857766
 ```
 
-##7. Exploratory graphs
+## 7. Exploratory graphs
 
 **Use the hist function to make histograms of the elevation, temperature, and wind speed variables for the whole dataset**
 
@@ -217,6 +217,7 @@ plot(elev$date, elev$wind.sp, type="l", cex=0.5)
 **Summary**
 This correlation shows the wind speed over a period of time between August to the beginning of September. This plot shows a general increase of wind speed over time then shows the lowest wind speed measurements found in the middle of August (after August 19's peak). The wind speed then peaks again nearer to August 26. 
 
-##8. Ask questions
+## 8. Ask questions
+
 One question I do have concerns the errors in data where the temperature found to be -40 degrees C to be consistently measured when that level of cold temperature is near impossible in the United States. What could have caused this reading, was it due to user/ human error? 
 
