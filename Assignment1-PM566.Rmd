@@ -1,0 +1,26 @@
+---
+title: "Assignment 1"
+author: "Isabella Villanueva"
+date: "2024-09-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Explanatory Data Analysis of PM~2.5~ in California from 2002 to 2022
+
+## What is PM ~2.5~?
+
+*PM or particulate matter* is a term for a mixture of solid particles and liquid droplets found in the air. Some particles, such as dust, dirt, soot, or smoke, are large or dark enough to be seen with the naked eye. Others are so small they can only be detected using an electron microscope (United States Environmental Protection Agency (EPA)).
+
+*PM~2.5~:* fine inhalable particles, with diameters that are generally 2.5 micrometers and smaller (EPA).
+
+### Summary of Data:
+
+When checking the dimensions of both data sets from 2002 and 2022, there are significantly more rows of data (readings through the year) from the year 2022 (59756) compared to the year 2002 (15976). This could impact the mean calculated from both years, and a question to whether these two years can be comparable with the difference in specificity of readings. Though, these two data sets do have the same amount of variables which helps with the comparability aspect.
+
+Found in the 2002 table "pmdata2002" with the following code: `tail(pmdata2002)`
+
+one value on 12/22/2002 reading a daily mean PM2.5 concentration of 1 ug/m^3^ had concerned me initially. But after searching the data, readings even below 1.0 are common through the year of 2002, thus dismissing my initial concerns.
