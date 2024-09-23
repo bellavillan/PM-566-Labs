@@ -1,0 +1,31 @@
+---
+title: "Lab 4"
+author: "Isabella Villanueva"
+format: html
+editor: visual
+embed-sources: TRUE
+---
+
+## 
+```{r}
+if (!file.exists("met_all.gz"))
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz",
+    destfile = "met_all.gz",
+    method   = "libcurl",
+    timeout  = 60
+    )
+met <- data.table::fread("met_all.gz")
+```
+```{r}
+met <- met[met$temp > -17]
+met <- met[!is.na(met$temp), ]
+met <- met[elev == 9999, elev := NA]
+met
+```
+```{r}
+met[, date := as.Date(paste(year, month, day, sep = "-"))]
+met_first_week <- met[day <= 7]
+```
+ 
+ 
