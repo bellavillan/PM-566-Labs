@@ -1,14 +1,16 @@
 ---
 title: "Lab 4"
 author: "Isabella Villanueva"
-format: html
+date: 09-27-2024
 editor: visual
 embed-sources: TRUE
+output: html_document
+theme: flatly
 ---
 
 ## 1. Read in the data
 
-*First download and then read in the met data*
+### First download and then read in the met data
 
 ```{r}
 if (!file.exists("met_all.gz"))
@@ -23,23 +25,23 @@ met <- data.table::fread("met_all.gz")
 
 ## 2. Prepare the data
 
-*Remove temperatures less than -17C Make sure there are no missing data in the key variables coded as 9999, 999, etc*
+### Remove temperatures less than -17*°*C. Make sure there are no missing data in the key variables coded as 9999, 999, etc.
 
 ```{r}
 met <- met[met$temp > -17][elev == 9999.0, elev := NA]
 met
 ```
 
-*Generate a date variable using the functions as.Date() (hint: You will need the following to create a date paste(year, month, day, sep = "-")).*
+### Generate a date variable using the functions as.Date() (hint: You will need the following to create a date paste(year, month, day, sep = "-")).
 
-(need to) Using the data.table::week function, keep the observations of the first week of the month.
+### Keep the observations of the first week of the month.
 
 ```{r}
 met[, date := as.Date(paste(year, month, day, sep = "-"))]
-met_first_week <- met[day <= 7]
+met <- met[met$day < 8]
 ```
 
-*Compute the mean by station of the variables temp, rh, wind.sp, vis.dist, dew.point, lat, lon, and elev.*
+### Compute the mean by station of the variables temp, rh, wind.sp, vis.dist, dew.point, lat, lon, and elev.
 
 ```{r}
 met_first_week <- met[,.(
@@ -53,26 +55,26 @@ met_first_week <- met[,.(
 ), by=c("USAFID", "day")]
 ```
 
-*Create a region variable for NW, SW, NE, SE based on lon = -98.00 and lat = 39.71 degrees*
+### Create a region variable for NW, SW, NE, SE based on lon = -98.00 and lat = 39.71 degrees
 
 ```{r}
+library(data.table)
 met[, region := fifelse(lon < -98.00 & lat > 39.71, "NW",
                 fifelse(lon < -98.00 & lat <= 39.71, "SW",
                 fifelse(lon >= -98.00 & lat > 39.71, "NE",
                 "SE")))]
 ```
 
-*Create a categorical variable for elevation as in the lecture slides*
-
-```{r}
-met_avg[, elev_cat := fifelse(elev > 252, "high", "low")]
-```
+### Create a categorical variable for elevation as in the lecture slides
 
 ## 3. Use geom_violin to examine the wind speed and dew point by region
 
-*Wind Speed*
+### Wind Speed
 
 ```{r}
+library(tidyverse)
+library(data.table)
+met <- met[!is.na(met$wind.sp), ]
 ggplot(met, aes(x = 1, y = wind.sp)) +
   geom_violin(fill = "pink") +
 labs(title = "Wind Speed by Region",
@@ -81,9 +83,12 @@ labs(title = "Wind Speed by Region",
 theme_minimal()
 ```
 
-*Dew Point*
+### Dew Point
 
 ```{r}
+library(tidyverse)
+library(data.table)
+met <- met[!is.na(met$dew.point), ]
 ggplot(met, aes(x = 1, y = dew.point)) +
 geom_violin(fill = "lightblue") +
 labs(title = "Dew Point by Region",
