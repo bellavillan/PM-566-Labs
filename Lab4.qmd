@@ -28,7 +28,7 @@ met <- data.table::fread("met_all.gz")
 ### Remove temperatures less than -17*°*C. Make sure there are no missing data in the key variables coded as 9999, 999, etc.
 
 ```{r}
-met <- met[met$temp > -17][elev == 9999.0, elev := NA]
+met <- met[met$temp > -17][elev == 9999.0, elev := NA][vis.var == 9, vis.var := NA]
 met
 ```
 
@@ -62,14 +62,22 @@ library(data.table)
 met[, region := fifelse(lon < -98.00 & lat > 39.71, "NW",
                 fifelse(lon < -98.00 & lat <= 39.71, "SW",
                 fifelse(lon >= -98.00 & lat > 39.71, "NE",
-                "SE")))]
+                fifelse(lon >= -98.00 & lat <= 39.71, "SE",
+                NA_character_))))]
 ```
 
 ### Create a categorical variable for elevation as in the lecture slides
 
+```{r}
+met_avg <- met[,.(
+   elev     = mean(elev,na.rm=TRUE)
+    ), by=c("USAFID", "day")]
+met_avg[, elev_cat := fifelse(elev > 252, "high", "low")]
+```
+
 ## 3. Use geom_violin to examine the wind speed and dew point by region
 
-### Wind Speed
+### Wind Speed and Dew Point by Region
 
 ```{r}
 library(tidyverse)
@@ -83,8 +91,6 @@ labs(title = "Wind Speed by Region",
 theme_minimal()
 ```
 
-### Dew Point
-
 ```{r}
 library(tidyverse)
 library(data.table)
@@ -95,4 +101,12 @@ labs(title = "Dew Point by Region",
 x = "Region",
 y = "Dew Point") +
 theme_minimal()
+```
+
+```{r}
+met
+met_avg[!is.na(region)] |>
+  ggplot(mapping = aes(x = wind.sp, y = dew.point)) + 
+  geom_point(mapping = aes(color = region)) + 
+  geom_smooth()
 ```
