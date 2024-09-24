@@ -24,3 +24,35 @@ When checking the dimensions of both data sets from 2002 and 2022, there are sig
 Found in the 2002 table "pmdata2002" with the following code: `tail(pmdata2002)`
 
 one value on 12/22/2002 reading a daily mean PM2.5 concentration of 1 ug/m^3^ had concerned me initially. But after searching the data, readings even below 1.0 are common through the year of 2002, thus dismissing my initial concerns.
+
+### Combine 2002 and 2022 Data into One Data Frame
+```{r}
+combined_data <- rbind(pmdata2002, pmdata2022)
+```
+
+### Create New Column that Signifies Year
+```{r}
+combined_data[, date = as.Date(paste(year, month, day, sep = "-"))]
+format(as.Date(combined_data$Date, format="%m/%d/%Y"),"%Y")
+head(combined_data$Date)
+```
+
+### Rename Key Variables
+
+```{r}
+names(combined_data)[names(combined_data) == "Daily.Mean.PM2.5.Concentration"] <- "Daily_PM2.5"
+names(combined_data)[names(combined_data) == "Daily.AQI.Value"] <- "Daily_AQI"
+names(combined_data)[names(combined_data) == "Site Latitude"] <- "lat"
+names(combined_data)[names(combined_data) == "Site Longitude"] <- "lon"
+```
+
+### Map Displaying Site Locations
+```{r}
+pm_stations <- (unique(combined_data[,c("lat","lon")]))  
+library(leaflet)
+leaflet(pm_stations) |> 
+  addProviderTiles('CartoDB.Positron') |> 
+  addCircles(lat = ~lat, lng = ~lon,
+             opacity = 1, fillOpacity = 1, radius = 400, col = factor(combined_data$Year))
+```
+
