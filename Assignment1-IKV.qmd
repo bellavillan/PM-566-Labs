@@ -1,0 +1,80 @@
+---
+title: "Assignment 1 - Final"
+author: "IKV"
+format: html
+editor: visual
+---
+
+## 
+```{r}
+library(readr)
+pmdata2002 <- read_csv("Downloads/pmdata2002.csv")
+pmdata2002 <- read_csv("Downloads/pmdata2022.csv")
+pmdata2002$Year <- 2002
+pmdata2022$Year <- 2022
+combined_data <- rbind(pmdata2002, pmdata2022)
+```
+### Create New Column that Signifies Year
+```{r}
+combined_data$Date <- as.Date(combined_data$Date)
+format(as.Date(combined_data$Date, format="%m/%d/%Y"),"%Y")
+head(combined_data$Year)
+```
+
+### Rename Key Variables
+```{r}
+names(combined_data)[names(combined_data) == "Daily.Mean.PM2.5.Concentration"] <- "Daily_PM2.5"
+names(combined_data)[names(combined_data) == "Daily.AQI.Value"] <- "Daily_AQI"
+names(combined_data)[names(combined_data) == "Site Latitude"] <- "lat"
+names(combined_data)[names(combined_data) == "Site Longitude"] <- "lon"
+```
+
+### Map Displaying Site Locations
+```{r}
+pm_stations <- (unique(combined_data[,c("lat","lon")]))  
+library(leaflet)
+leaflet(pm_stations) |> 
+  addProviderTiles('CartoDB.Positron') |> 
+  addCircles(lat = ~lat, lng = ~lon,
+             opacity = 1, fillOpacity = 1, radius = 400, col = factor(combined_data$Year))
+```
+
+### Check for any missing values of PM~2.5~ in the combined dataset
+```{r}
+missing_values <- sum(is.na(combined_data$`Daily Mean PM2.5 Concentration`))
+cat("Total missing values in PM~2.5~", missing_values, "\n")
+```
+
+### Check for implausible values
+```{r}
+implausible_values <- sum(combined_data$`Daily Mean PM2.5 Concentration` < 0, na.rm = TRUE)
+cat("Total implausible values in PM~2.5~", implausible_values, "\n")
+
+```
+
+### Explore Proportions of missing and implausible values
+```{r}
+total_observations <- nrow(combined_data)
+missing_proportion <- missing_values / total_observations
+implausible_proportion <- implausible_values / total_observations
+cat("Proportion of missing values in PM~2.5~ concentrations:", missing_proportion, "\n")
+cat("Proportion of implausible values in PM~2.5~ concentrations:", implausible_proportion, "\n")
+```
+
+### Summarize Temporal Patterns of Implausible Values
+```{r}
+combined_data$Date <- as.Date(combined_data$Date)
+library(dplyr)
+library(lubridate)
+
+combined_data[, date = as.Date(paste(year, month, day, sep = "-"))]
+monthly_summary <- combined_data %>%
+  mutate(Month = floor_date(Date, '%m')) %>%
+  group_by(Month) %>%
+  summarise(
+    Total = n(),
+    Missing = sum(is.na(`Daily Mean PM2.5 Concentration`)),
+    Implausible = sum(`Daily Mean PM2.5 Concentration` < 0, na.rm = TRUE)
+  )
+print(monthly_summary)
+```
