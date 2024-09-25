@@ -115,6 +115,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="first-download-and-then-read-in-the-met-data" class="level3">
 <h3 class="anchored" data-anchor-id="first-download-and-then-read-in-the-met-data">First download and then read in the met data</h3>
 <div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(<span class="st">"met_all.gz"</span>))</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">download.file</span>(</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">url =</span> <span class="st">"https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz"</span>,</span>
@@ -122,7 +124,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">method   =</span> <span class="st">"libcurl"</span>,</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">timeout  =</span> <span class="dv">60</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(<span class="st">"met_all.gz"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> data.table<span class="sc">::</span><span class="fu">fread</span>(<span class="st">"met_all.gz"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(met)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 </section>
@@ -131,8 +135,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="remove-temperatures-less-than--17c.-make-sure-there-are-no-missing-data-in-the-key-variables-coded-as-9999-999-etc." class="level3">
 <h3 class="anchored" data-anchor-id="remove-temperatures-less-than--17c.-make-sure-there-are-no-missing-data-in-the-key-variables-coded-as-9999-999-etc.">Remove temperatures less than -17<em>°</em>C. Make sure there are no missing data in the key variables coded as 9999, 999, etc.</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[met<span class="sc">$</span>temp <span class="sc">&gt;</span> <span class="sc">-</span><span class="dv">17</span>][elev <span class="sc">==</span> <span class="fl">9999.0</span>, elev <span class="sc">:</span><span class="er">=</span> <span class="cn">NA</span>]</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>met</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[met<span class="sc">$</span>temp <span class="sc">&gt;</span> <span class="sc">-</span><span class="dv">17</span>,]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>met<span class="sc">$</span>elev[met<span class="sc">$</span>elev <span class="sc">==</span> <span class="fl">9999.0</span>] <span class="ot">&lt;-</span> <span class="cn">NA</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 <section id="generate-a-date-variable-using-the-functions-as.date-hint-you-will-need-the-following-to-create-a-date-pasteyear-month-day-sep--." class="level3">
@@ -141,106 +148,156 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="keep-the-observations-of-the-first-week-of-the-month." class="level3">
 <h3 class="anchored" data-anchor-id="keep-the-observations-of-the-first-week-of-the-month.">Keep the observations of the first week of the month.</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>met[, date <span class="sc">:</span><span class="er">=</span> <span class="fu">as.Date</span>(<span class="fu">paste</span>(year, month, day, <span class="at">sep =</span> <span class="st">"-"</span>))]</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[met<span class="sc">$</span>day <span class="sc">&lt;</span> <span class="dv">8</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>met<span class="sc">$</span>Date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(<span class="fu">paste</span>(met<span class="sc">$</span>year, met<span class="sc">$</span>month, met<span class="sc">$</span>day, <span class="at">sep =</span> <span class="st">"-"</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'lubridate'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    date, intersect, setdiff, union</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>met<span class="sc">$</span>Week <span class="ot">&lt;-</span> <span class="fu">week</span>(met<span class="sc">$</span>Date)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[met<span class="sc">$</span>Week <span class="sc">==</span> <span class="dv">31</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 <section id="compute-the-mean-by-station-of-the-variables-temp-rh-wind.sp-vis.dist-dew.point-lat-lon-and-elev." class="level3">
 <h3 class="anchored" data-anchor-id="compute-the-mean-by-station-of-the-variables-temp-rh-wind.sp-vis.dist-dew.point-lat-lon-and-elev.">Compute the mean by station of the variables temp, rh, wind.sp, vis.dist, dew.point, lat, lon, and elev.</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>met_first_week <span class="ot">&lt;-</span> met[,.(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">temp     =</span> <span class="fu">mean</span>(temp,<span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">rh       =</span> <span class="fu">mean</span>(rh,<span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">wind.sp  =</span> <span class="fu">mean</span>(wind.sp,<span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">vis.dist =</span> <span class="fu">mean</span>(vis.dist,<span class="at">na.rm=</span><span class="cn">TRUE</span>),</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">lat      =</span> <span class="fu">mean</span>(lat),</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">lon      =</span> <span class="fu">mean</span>(lon), </span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">elev     =</span> <span class="fu">mean</span>(elev,<span class="at">na.rm=</span><span class="cn">TRUE</span>)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>), by<span class="ot">=</span><span class="fu">c</span>(<span class="st">"USAFID"</span>, <span class="st">"day"</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>met_daily <span class="ot">&lt;-</span> <span class="fu">summarize</span>(met,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">temp =</span> <span class="fu">mean</span>(temp),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">lat =</span> <span class="fu">mean</span>(lat),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">lon =</span> <span class="fu">mean</span>(lon),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>                       <span class="at">elev =</span> <span class="fu">mean</span>(elev),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>                       <span class="at">rh =</span> <span class="fu">mean</span>(rh), </span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>                       <span class="at">wind.sp =</span> <span class="fu">mean</span>(wind.sp), </span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">vis.dist =</span> <span class="fu">mean</span>(vis.dist), </span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">dew.point =</span> <span class="fu">mean</span>(dew.point),</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>                       <span class="at">.by =</span> <span class="fu">c</span>(USAFID))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 <section id="create-a-region-variable-for-nw-sw-ne-se-based-on-lon--98.00-and-lat-39.71-degrees" class="level3">
 <h3 class="anchored" data-anchor-id="create-a-region-variable-for-nw-sw-ne-se-based-on-lon--98.00-and-lat-39.71-degrees">Create a region variable for NW, SW, NE, SE based on lon = -98.00 and lat = 39.71 degrees</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>met[, region <span class="sc">:</span><span class="er">=</span> <span class="fu">fifelse</span>(lon <span class="sc">&lt;</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> lat <span class="sc">&gt;</span> <span class="fl">39.71</span>, <span class="st">"NW"</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                <span class="fu">fifelse</span>(lon <span class="sc">&lt;</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> lat <span class="sc">&lt;=</span> <span class="fl">39.71</span>, <span class="st">"SW"</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                <span class="fu">fifelse</span>(lon <span class="sc">&gt;=</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> lat <span class="sc">&gt;</span> <span class="fl">39.71</span>, <span class="st">"NE"</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                <span class="st">"SE"</span>)))]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>met<span class="sc">$</span>region <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(met<span class="sc">$</span>lon <span class="sc">&lt;</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> met<span class="sc">$</span>lat <span class="sc">&gt;</span> <span class="fl">39.71</span>, <span class="st">"NW"</span>,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                <span class="fu">ifelse</span>(met<span class="sc">$</span>lon <span class="sc">&lt;</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> met<span class="sc">$</span>lat <span class="sc">&lt;=</span> <span class="fl">39.71</span>, <span class="st">"SW"</span>,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                <span class="fu">ifelse</span>(met<span class="sc">$</span>lon <span class="sc">&gt;=</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> met<span class="sc">$</span>lat <span class="sc">&gt;</span> <span class="fl">39.71</span>, <span class="st">"NE"</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                <span class="fu">ifelse</span>(met<span class="sc">$</span>lon <span class="sc">&gt;=</span> <span class="sc">-</span><span class="fl">98.00</span> <span class="sc">&amp;</span> met<span class="sc">$</span>lat <span class="sc">&lt;=</span> <span class="fl">39.71</span>, <span class="st">"SE"</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                <span class="cn">NA</span>))))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 <section id="create-a-categorical-variable-for-elevation-as-in-the-lecture-slides" class="level3">
 <h3 class="anchored" data-anchor-id="create-a-categorical-variable-for-elevation-as-in-the-lecture-slides">Create a categorical variable for elevation as in the lecture slides</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>met<span class="sc">$</span>elev_cat <span class="ot">&lt;-</span><span class="fu">ifelse</span>(met<span class="sc">$</span>elev <span class="sc">&gt;</span> <span class="dv">252</span>, <span class="st">"high"</span>, <span class="st">"low"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 </section>
 </section>
 <section id="use-geom_violin-to-examine-the-wind-speed-and-dew-point-by-region" class="level2">
 <h2 class="anchored" data-anchor-id="use-geom_violin-to-examine-the-wind-speed-and-dew-point-by-region">3. Use geom_violin to examine the wind speed and dew point by region</h2>
-<section id="wind-speed" class="level3">
-<h3 class="anchored" data-anchor-id="wind-speed">Wind Speed</h3>
+<section id="wind-speed-and-dew-point-by-region" class="level3">
+<h3 class="anchored" data-anchor-id="wind-speed-and-dew-point-by-region">Wind Speed and Dew Point by Region</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stderr">
 <pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.5
-✔ forcats   1.0.0     ✔ stringr   1.5.1
-✔ ggplot2   3.5.1     ✔ tibble    3.2.1
-✔ lubridate 1.9.3     ✔ tidyr     1.3.1
-✔ purrr     1.0.2     
+✔ forcats 1.0.0     ✔ stringr 1.5.1
+✔ ggplot2 3.5.1     ✔ tibble  3.2.1
+✔ purrr   1.0.2     ✔ tidyr   1.3.1
+✔ readr   2.1.5     
 ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::between()     masks data.table::between()
-✖ dplyr::filter()      masks stats::filter()
-✖ dplyr::first()       masks data.table::first()
-✖ lubridate::hour()    masks data.table::hour()
-✖ lubridate::isoweek() masks data.table::isoweek()
-✖ dplyr::lag()         masks stats::lag()
-✖ dplyr::last()        masks data.table::last()
-✖ lubridate::mday()    masks data.table::mday()
-✖ lubridate::minute()  masks data.table::minute()
-✖ lubridate::month()   masks data.table::month()
-✖ lubridate::quarter() masks data.table::quarter()
-✖ lubridate::second()  masks data.table::second()
-✖ purrr::transpose()   masks data.table::transpose()
-✖ lubridate::wday()    masks data.table::wday()
-✖ lubridate::week()    masks data.table::week()
-✖ lubridate::yday()    masks data.table::yday()
-✖ lubridate::year()    masks data.table::year()
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
 ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[<span class="sc">!</span><span class="fu">is.na</span>(met<span class="sc">$</span>wind.sp), ]</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(met, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> wind.sp)) <span class="sc">+</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_violin</span>(<span class="at">fill =</span> <span class="st">"pink"</span>) <span class="sc">+</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Wind Speed by Region"</span>,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">"Region"</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">"Wind Speed"</span>) <span class="sc">+</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="Lab4_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
-</section>
-<section id="dew-point" class="level3">
-<h3 class="anchored" data-anchor-id="dew-point">Dew Point</h3>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[<span class="sc">!</span><span class="fu">is.na</span>(met<span class="sc">$</span>dew.point), ]</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(met, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> dew.point)) <span class="sc">+</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_violin</span>(<span class="at">fill =</span> <span class="st">"lightblue"</span>) <span class="sc">+</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Dew Point by Region"</span>,</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="st">"Region"</span>,</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Dew Point"</span>) <span class="sc">+</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[<span class="sc">!</span><span class="fu">is.na</span>(met<span class="sc">$</span>wind.sp), ]</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(met, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> wind.sp)) <span class="sc">+</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_violin</span>(<span class="at">fill =</span> <span class="st">"pink"</span>) <span class="sc">+</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>   <span class="fu">facet_wrap</span>(<span class="sc">~</span> region, <span class="at">nrow =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
 <p><img src="Lab4_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Wind Speed by Region"</span>,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> <span class="st">"Region"</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> <span class="st">"Wind Speed"</span>) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>NULL</code></pre>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>met <span class="ot">&lt;-</span> met[<span class="sc">!</span><span class="fu">is.na</span>(met<span class="sc">$</span>dew.point), ]</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(met, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span>, <span class="at">y =</span> dew.point)) <span class="sc">+</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_violin</span>(<span class="at">fill =</span> <span class="st">"lightblue"</span>) <span class="sc">+</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> region, <span class="at">nrow =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Lab4_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Dew Point by Region"</span>,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="st">"Region"</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Dew Point"</span>) <span class="sc">+</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>NULL</code></pre>
 </div>
 </div>
 </section>

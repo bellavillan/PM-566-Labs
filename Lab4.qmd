@@ -6,6 +6,7 @@ editor: visual
 embed-sources: TRUE
 output: html_document
 theme: flatly
+code-fold: true
 ---
 
 ## 1. Read in the data
@@ -21,6 +22,7 @@ if (!file.exists("met_all.gz"))
     timeout  = 60
     )
 met <- data.table::fread("met_all.gz")
+met <- as.data.frame(met)
 ```
 
 ## 2. Prepare the data
@@ -28,8 +30,8 @@ met <- data.table::fread("met_all.gz")
 ### Remove temperatures less than -17*°*C. Make sure there are no missing data in the key variables coded as 9999, 999, etc.
 
 ```{r}
-met <- met[met$temp > -17][elev == 9999.0, elev := NA][vis.var == 9, vis.var := NA]
-met
+met <- met[met$temp > -17,]
+met$elev[met$elev == 9999.0] <- NA
 ```
 
 ### Generate a date variable using the functions as.Date() (hint: You will need the following to create a date paste(year, month, day, sep = "-")).
@@ -37,42 +39,42 @@ met
 ### Keep the observations of the first week of the month.
 
 ```{r}
-met[, date := as.Date(paste(year, month, day, sep = "-"))]
-met <- met[met$day < 8]
+met$Date <- as.Date(paste(met$year, met$month, met$day, sep = "-"))
+library(lubridate)
+met$Week <- week(met$Date)
+met <- met[met$Week == 31,]
 ```
 
 ### Compute the mean by station of the variables temp, rh, wind.sp, vis.dist, dew.point, lat, lon, and elev.
 
 ```{r}
-met_first_week <- met[,.(
-  temp     = mean(temp,na.rm=TRUE),
-  rh       = mean(rh,na.rm=TRUE),
-  wind.sp  = mean(wind.sp,na.rm=TRUE),
-  vis.dist = mean(vis.dist,na.rm=TRUE),
-  lat      = mean(lat),
-  lon      = mean(lon), 
-  elev     = mean(elev,na.rm=TRUE)
-), by=c("USAFID", "day")]
+library(dplyr)
+met_daily <- summarize(met,
+                       temp = mean(temp),
+                       lat = mean(lat),
+                       lon = mean(lon),
+                       elev = mean(elev),
+                       rh = mean(rh), 
+                       wind.sp = mean(wind.sp), 
+                       vis.dist = mean(vis.dist), 
+                       dew.point = mean(dew.point),
+                       .by = c(USAFID))
 ```
 
 ### Create a region variable for NW, SW, NE, SE based on lon = -98.00 and lat = 39.71 degrees
 
 ```{r}
-library(data.table)
-met[, region := fifelse(lon < -98.00 & lat > 39.71, "NW",
-                fifelse(lon < -98.00 & lat <= 39.71, "SW",
-                fifelse(lon >= -98.00 & lat > 39.71, "NE",
-                fifelse(lon >= -98.00 & lat <= 39.71, "SE",
-                NA_character_))))]
+met$region <- ifelse(met$lon < -98.00 & met$lat > 39.71, "NW",
+                ifelse(met$lon < -98.00 & met$lat <= 39.71, "SW",
+                ifelse(met$lon >= -98.00 & met$lat > 39.71, "NE",
+                ifelse(met$lon >= -98.00 & met$lat <= 39.71, "SE",
+                NA))))
 ```
 
 ### Create a categorical variable for elevation as in the lecture slides
 
 ```{r}
-met_avg <- met[,.(
-   elev     = mean(elev,na.rm=TRUE)
-    ), by=c("USAFID", "day")]
-met_avg[, elev_cat := fifelse(elev > 252, "high", "low")]
+met$elev_cat <-ifelse(met$elev > 252, "high", "low")
 ```
 
 ## 3. Use geom_violin to examine the wind speed and dew point by region
@@ -81,10 +83,10 @@ met_avg[, elev_cat := fifelse(elev > 252, "high", "low")]
 
 ```{r}
 library(tidyverse)
-library(data.table)
 met <- met[!is.na(met$wind.sp), ]
 ggplot(met, aes(x = 1, y = wind.sp)) +
   geom_violin(fill = "pink") +
+   facet_wrap(~ region, nrow = 1)
 labs(title = "Wind Speed by Region",
   x = "Region",
   y = "Wind Speed") +
@@ -93,20 +95,13 @@ theme_minimal()
 
 ```{r}
 library(tidyverse)
-library(data.table)
 met <- met[!is.na(met$dew.point), ]
 ggplot(met, aes(x = 1, y = dew.point)) +
 geom_violin(fill = "lightblue") +
+  facet_wrap(~ region, nrow = 1)
 labs(title = "Dew Point by Region",
 x = "Region",
 y = "Dew Point") +
 theme_minimal()
 ```
 
-```{r}
-met
-met_avg[!is.na(region)] |>
-  ggplot(mapping = aes(x = wind.sp, y = dew.point)) + 
-  geom_point(mapping = aes(color = region)) + 
-  geom_smooth()
-```
