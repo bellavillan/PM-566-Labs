@@ -84,7 +84,7 @@ When checking for the total implausible values (measured by the implausibility o
 ```{r}
 boxplot(combined_data$`Daily Mean PM2.5 Concentration` ~ combined_data$Year)
 ```
-#### County-Level Data by Year 
+### County-Level Data by Year 
 ```{r, fig.width=10, fig.height=40}
 library(tidyverse)
 library(ggplot2)
@@ -94,6 +94,7 @@ combined_data |>
   geom_point(mapping = aes(x = Date, y = `Daily Mean PM2.5 Concentration`)) + 
   facet_grid(County ~ Year, scales = "free")
 ```
+### One Site in Los Angeles Data
 ```{r}
 library(tidyverse)
 site_data <- combined_data %>%
@@ -109,5 +110,12 @@ if (nrow(site_data) > 0) {
     scale_x_continuous(breaks = unique(site_data$Year))
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
+```
+
+```{r}
+LosAngelesData1 <- combined_data[combined_data$`Site Latitude` == 34.06659,]
+LosAngelesData2 <- combined_data[combined_data$`Site Longitude` == -118.2269,]
+LosAngelesDataSite <- rbind(LosAngelesData1, LosAngelesData2)
+boxplot(LosAngelesDataSite$`Daily Mean PM2.5 Concentration` ~ LosAngelesDataSite$Year)
 ```
 
