@@ -6,7 +6,6 @@ editor: visual
 embed-sources: TRUE
 output: html_document
 theme: flatly
-code-fold: true
 ---
 
 ## 1. Read in the data
@@ -49,7 +48,7 @@ met <- met[met$Week == 31,]
 
 ```{r}
 library(dplyr)
-met_daily <- summarize(met,
+met_avg <- summarize(met,
                        temp = mean(temp),
                        lat = mean(lat),
                        lon = mean(lon),
@@ -77,7 +76,7 @@ met$region <- ifelse(met$lon < -98.00 & met$lat > 39.71, "NW",
 met$elev_cat <-ifelse(met$elev > 252, "high", "low")
 ```
 
-## 3. Use geom_violin to examine the wind speed and dew point by region
+## 3. Use `geom_violin` to examine the wind speed and dew point by region
 
 ### Wind Speed and Dew Point by Region
 
@@ -103,5 +102,54 @@ labs(title = "Dew Point by Region",
 x = "Region",
 y = "Dew Point") +
 theme_minimal()
+```
+## 4. Use `geom_jitter` with `stat_smooth` to examine the association between dew point and wind speed by region
+
+```{r}
+library(tidyverse)
+met <- met[!is.na(met$region), ]
+ggplot(data = met) + 
+  geom_jitter(mapping = aes(x = dew.point, y = wind.sp, color = region)) +
+geom_smooth(mapping = aes(x = dew.point, y = wind.sp, linetype = region))+
+  labs(title = "Association of Dew Point and Wind Speed by Region")
+```
+
+## 5. Use `geom_bar` to create barplots of the weather stations by elevation category colored by region
+- Bars by elevation category using position="dodge"
+- Change colors from the default. Color by region using scale_fill_brewer see this
+- Create nice labels on the axes and add a title
+- Describe what you observe in the graph
+```{r}
+library(tidyverse)
+met[!is.na(met$elev_cat) & met$elev_cat != "clear"] |>
+  ggplot() + 
+  geom_bar(mapping = aes(x = elev_cat, fill = region), position = "dodge")+
+  scale_fill_brewer(palette = "Pastel1")+
+  labs(title = "Weather Station Regions by Elevation Category")
+```
+## 6. Use `stat_summary` to examine mean dew point and wind speed by region with standard deviation error bars
+
+```{r}
+l <- met_avg[!is.na(dew.point) & dew.point != "clear",] |>
+  ggplot(met_avg, aes(x = Region, y = `Dew Point`, fill = Region)) +
+  stat_summary(fun.data = "mean_sdl", geom = "bar", width = 0.7, position = position_dodge(0.8)) +
+  stat_summary(fun.data = "mean_sdl", geom = "errorbar", width = 0.2, position = position_dodge(0.8)) +
+  labs(title = "Mean Dew Point by Region with Standard Deviation Error Bars",
+       x = "Region",
+       y = "Mean Dew Point (°F or °C)") +
+  theme_minimal()
+```
+### 7. Make a map showing the spatial trend in relative humidity in the US
+
+```{r}
+library(data.table)
+library(leaflet)
+rel_hum <- unique(combined_data[, c("rh")])  
+
+leaflet(pm_stations) |> 
+  addProviderTiles('CartoDB.Positron') |> 
+  addCircles(lat = ~`Site Latitude`, lng = ~`Site Longitude`,
+             opacity = 1, fillOpacity = 1, radius = 400, color = c('pink','blue'))
+```
 ```
 

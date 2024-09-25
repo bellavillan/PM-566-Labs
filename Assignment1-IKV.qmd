@@ -3,40 +3,51 @@ title: "Assignment 1 - Final"
 author: "IKV"
 format: html
 editor: visual
+embed-resources: true
+theme: flatly
 ---
+# Explanatory Data Analysis of PM~2.5~ in California from 2002 to 2022
 
-## 
+## What is PM ~2.5~?
+
+*PM or particulate matter* is a term for a mixture of solid particles and liquid droplets found in the air. Some particles, such as dust, dirt, soot, or smoke, are large or dark enough to be seen with the naked eye. Others are so small they can only be detected using an electron microscope (United States Environmental Protection Agency (EPA)).
+
+*PM~2.5~:* fine inhalable particles, with diameters that are generally 2.5 micrometers and smaller (EPA).
+
+### Summary of Data:
+
+When checking the dimensions of both data sets from 2002 and 2022, there are significantly more rows of data (readings through the year) from the year 2022 (59756) compared to the year 2002 (15976). This could impact the mean calculated from both years, and a question to whether these two years can be comparable with the difference in specificity of readings. Though, these two data sets do have the same amount of variables which helps with the comparability aspect.
+
+Found in the 2002 table "pmdata2002" with the following code: `tail(pmdata2002)`
+
+one value on 12/22/2002 reading a daily mean PM2.5 concentration of 1 ug/m^3^ had concerned me initially. But after searching the data, readings even below 1.0 are common through the year of 2002, thus dismissing my initial concerns.
+
+### Combine 2002 and 2022 Data into One Data Frame, the Create New Column that Signifies Year
 ```{r}
 library(readr)
-pmdata2002 <- read_csv("Downloads/pmdata2002.csv")
-pmdata2002 <- read_csv("Downloads/pmdata2022.csv")
+pmdata2002 <- read_csv("~/Downloads/pmdata2002.csv")
+pmdata2022 <- read_csv("~/Downloads/pmdata2022.csv")
 pmdata2002$Year <- 2002
 pmdata2022$Year <- 2022
 combined_data <- rbind(pmdata2002, pmdata2022)
-```
-### Create New Column that Signifies Year
-```{r}
-combined_data$Date <- as.Date(combined_data$Date)
-format(as.Date(combined_data$Date, format="%m/%d/%Y"),"%Y")
-head(combined_data$Year)
 ```
 
 ### Rename Key Variables
 ```{r}
 names(combined_data)[names(combined_data) == "Daily.Mean.PM2.5.Concentration"] <- "Daily_PM2.5"
 names(combined_data)[names(combined_data) == "Daily.AQI.Value"] <- "Daily_AQI"
-names(combined_data)[names(combined_data) == "Site Latitude"] <- "lat"
-names(combined_data)[names(combined_data) == "Site Longitude"] <- "lon"
 ```
 
 ### Map Displaying Site Locations
 ```{r}
-pm_stations <- (unique(combined_data[,c("lat","lon")]))  
+library(data.table)
 library(leaflet)
+pm_stations <- unique(combined_data[, c("Site Latitude", "Site Longitude")])  
+
 leaflet(pm_stations) |> 
   addProviderTiles('CartoDB.Positron') |> 
-  addCircles(lat = ~lat, lng = ~lon,
-             opacity = 1, fillOpacity = 1, radius = 400, col = factor(combined_data$Year))
+  addCircles(lat = ~`Site Latitude`, lng = ~`Site Longitude`,
+             opacity = 1, fillOpacity = 1, radius = 400, color = c('pink','blue'))
 ```
 
 ### Check for any missing values of PM~2.5~ in the combined dataset
@@ -61,20 +72,42 @@ cat("Proportion of missing values in PM~2.5~ concentrations:", missing_proportio
 cat("Proportion of implausible values in PM~2.5~ concentrations:", implausible_proportion, "\n")
 ```
 
-### Summarize Temporal Patterns of Implausible Values
-```{r}
-combined_data$Date <- as.Date(combined_data$Date)
-library(dplyr)
-library(lubridate)
+## Summarize Patterns of These Observations
 
-combined_data[, date = as.Date(paste(year, month, day, sep = "-"))]
-monthly_summary <- combined_data %>%
-  mutate(Month = floor_date(Date, '%m')) %>%
-  group_by(Month) %>%
-  summarise(
-    Total = n(),
-    Missing = sum(is.na(`Daily Mean PM2.5 Concentration`)),
-    Implausible = sum(`Daily Mean PM2.5 Concentration` < 0, na.rm = TRUE)
-  )
-print(monthly_summary)
+When checking for missing values of PM~2.5~ concentrations, there seems to be zero values missing -- most likely due to previous data cleaning. 
+
+When checking for the total implausible values (measured by the implausibility of measuring a negative PM~2.5~ concentration), 430 values were found. This implausibility can be attributed to an error of measurement tools, user- or technical error. 
+
+## Exploratory Graphs 
+
+### State-Level Data by Year 
+```{r}
+boxplot(combined_data$`Daily Mean PM2.5 Concentration` ~ combined_data$Year)
 ```
+#### County-Level Data by Year 
+```{r, fig.width=10, fig.height=40}
+library(tidyverse)
+library(ggplot2)
+combined_data |> 
+  filter(!is.na(County) & !is.na(Year)) |> 
+  ggplot() + 
+  geom_point(mapping = aes(x = Date, y = `Daily Mean PM2.5 Concentration`)) + 
+  facet_grid(County ~ Year, scales = "free")
+```
+```{r}
+library(tidyverse)
+site_data <- combined_data %>%
+  filter(`Site Latitude` == 34.06659, `Site Longitude` == -118.2269, !is.na(`Daily Mean PM2.5 Concentration`))
+if (nrow(site_data) > 0) {
+  ggplot(site_data, aes(x = Year, y = `Daily Mean PM2.5 Concentration`)) +
+    geom_line(color = "blue") +
+    geom_point(color = "red") + 
+    labs(title = "PM2.5 Concentration Over Time",
+         x = "Year",
+         y = "Daily Mean PM2.5 Concentration (µg/m³)") +
+    theme_minimal() +
+    scale_x_continuous(breaks = unique(site_data$Year))
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
