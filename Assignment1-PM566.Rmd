@@ -29,19 +29,16 @@ one value on 12/22/2002 reading a daily mean PM2.5 concentration of 1 ug/m^3^ ha
 
 ```{r}
 library(data.table)
+pmdata2002 <- 
 combined_data <- rbind(pmdata2002, pmdata2022)
-```
-
-```{r}
-combined_data$Year <- combined_data$Date, "%Y"
 ```
 
 ### Create New Column that Signifies Year
 
 ```{r}
-combined_data[, date = as.Date(paste(year, month, day, sep = "-"))]
+combined_data$Date <- as.Date(combined_data$Date)
 format(as.Date(combined_data$Date, format="%m/%d/%Y"),"%Y")
-head(combined_data$Date)
+head(combined_data$Year)
 ```
 
 ### Rename Key Variables
