@@ -191,8 +191,10 @@ met <- met[!is.na(met$rh),]
 library(leaflet)
 met_avg2 <- met[,.(rh = mean(rh, na.rm=TRUE), lat = mean(lat), lon = mean(lon)), by=c("USAFID")]
 met_avg2 <- met_avg2[!is.na(rh)]
+rh.pal <- colorNumeric(c('lightblue', 'green'), domain = met_avg2$rh)
+rh.pal
 leaflet(met_avg2) |>
   addProviderTiles('CartoDB.Positron') |> 
   addCircles(lat = ~lat, lng = ~lon,
-             opacity = 1, fillOpacity = 1, radius = 400, color = c("pink", "gold", "blue"))
+             opacity = 1, fillOpacity = 1, radius = 400, color = ~ rh.pal(rh))
 ```
