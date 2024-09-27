@@ -103,6 +103,7 @@ x = "Region",
 y = "Dew Point") +
 theme_minimal()
 ```
+
 ## 4. Use `geom_jitter` with `stat_smooth` to examine the association between dew point and wind speed by region
 
 ```{r}
@@ -115,41 +116,83 @@ geom_smooth(mapping = aes(x = dew.point, y = wind.sp, linetype = region))+
 ```
 
 ## 5. Use `geom_bar` to create barplots of the weather stations by elevation category colored by region
-- Bars by elevation category using position="dodge"
-- Change colors from the default. Color by region using scale_fill_brewer see this
-- Create nice labels on the axes and add a title
-- Describe what you observe in the graph
-```{r}
-library(tidyverse)
-met[!is.na(met$elev_cat) & met$elev_cat != "clear"] |>
-  ggplot() + 
-  geom_bar(mapping = aes(x = elev_cat, fill = region), position = "dodge")+
-  scale_fill_brewer(palette = "Pastel1")+
-  labs(title = "Weather Station Regions by Elevation Category")
-```
-## 6. Use `stat_summary` to examine mean dew point and wind speed by region with standard deviation error bars
 
-```{r}
-l <- met_avg[!is.na(dew.point) & dew.point != "clear",] |>
-  ggplot(met_avg, aes(x = Region, y = `Dew Point`, fill = Region)) +
-  stat_summary(fun.data = "mean_sdl", geom = "bar", width = 0.7, position = position_dodge(0.8)) +
-  stat_summary(fun.data = "mean_sdl", geom = "errorbar", width = 0.2, position = position_dodge(0.8)) +
-  labs(title = "Mean Dew Point by Region with Standard Deviation Error Bars",
-       x = "Region",
-       y = "Mean Dew Point (°F or °C)") +
+In this graph, we can observe a high disportionality in the low elevation category in the southeast region, with the second largest number of stations being in the high elevation category in the northeast region. This can point to the lack of equal amount of stations in California to accurately represent the states unique landscape, or it may mean that the state of California has far more locations in lower elevations than higher.
+
+```{r, fig.width=8}
+library(tidyverse)
+met <- met[!is.na(met$region),]
+met <- met[!is.na(met$elev_cat),]
+ggplot(met, aes(x = met$elev_cat, fill = met$region))+
+  geom_bar(position = "dodge") + scale_fill_brewer(palette = "Pastel1") +
+  labs(title = "Weather Station Regions by Elevation Category",
+       x = "Elevation Category",
+       y = "Number of Stations",
+       fill = "region") +
   theme_minimal()
 ```
+
+## 6. Use `stat_summary` to examine mean dew point and wind speed by region with standard deviation error bars
+
+### Describe the graph and what you observe
+
+For the dew.point graph, we can see that the Northwest region has the largest standard deviation of the mean, where its range varies from \~ 2 to \~ 25. The region with the smallest variability is the southeast region, which has previously been shown to have the most data and the most stations in the state. This can contribute to the accuracy of these readings.
+
+For the wind.sp graph, we can observe a graph that reads two pairs of data that bear great resemblance by region, where the Northeast data and Southeast data have similar ranges and mean values; and the Northwest data and Southwest data have similar ranges and mean values.
+
+The mean value of the data **dew point** has output value for dew point is 18.8.
+
+The mean value of the data **wind speed** has output value for wind speed is 2.1.
+
+```{r}
+met <- met[!is.na(met$region),]
+met <- met[!is.na(met$dew.point),]
+met <- met[!is.na(met$wind.sp),]
+l <- met[!is.na(met$region),] |>
+  ggplot() +
+  stat_summary(mapping = aes(x = region, y = dew.point),
+               fun.min = min,
+               fun.max = max,
+               fun = median, 
+               fun.data = mean_sdl)
+l
+  labs(title = "Mean Dew Point by Region with Standard Deviation Error Bars",
+       x = "Region",
+       y = "Mean Dew Point (°C)") +
+  theme_minimal()
+  summarize(met,
+            dew.point = mean(dew.point))
+```
+
+```{r}
+met <- met[!is.na(met$region),]
+met <- met[!is.na(met$dew.point),]
+met <- met[!is.na(met$wind.sp),]
+l <- met[!is.na(met$region),] |>
+  ggplot() +
+  stat_summary(mapping = aes(x = region, y = wind.sp),
+               fun.min = min,
+               fun.max = max,
+               fun = median, 
+               fun.data = mean_sdl)
+l
+  labs(title = "Mean Wind Speed by Region with Standard Deviation Error Bars",
+       x = "Region",
+       y = "Mean Wind Speed") +
+  theme_minimal()
+  summarize(met,
+            wind.sp = median(wind.sp))
+```
+
 ### 7. Make a map showing the spatial trend in relative humidity in the US
 
 ```{r}
-library(data.table)
+met <- met[!is.na(met$rh),]
 library(leaflet)
-rel_hum <- unique(combined_data[, c("rh")])  
-
-leaflet(pm_stations) |> 
+met_avg2 <- met[,.(rh = mean(rh, na.rm=TRUE), lat = mean(lat), lon = mean(lon)), by=c("USAFID")]
+met_avg2 <- met_avg2[!is.na(rh)]
+leaflet(met_avg2) |>
   addProviderTiles('CartoDB.Positron') |> 
-  addCircles(lat = ~`Site Latitude`, lng = ~`Site Longitude`,
-             opacity = 1, fillOpacity = 1, radius = 400, color = c('pink','blue'))
+  addCircles(lat = ~lat, lng = ~lon,
+             opacity = 1, fillOpacity = 1, radius = 400, color = c("pink", "gold", "blue"))
 ```
-```
-
