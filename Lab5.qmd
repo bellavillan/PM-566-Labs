@@ -8,4 +8,37 @@ embed-resources: true
 
 ## Lab 5 - Data Wrangling with the `met` dataset
 
-###
+### Setup in R
+#### 1.Load the data.table (and the dtplyr and dplyr packages if you plan to work with those).
+
+```{r}
+library(data.table)
+library(dplyr)
+```
+#### 2. Load the met data from https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz.
+```{r}
+met_url <- "https://github.com/USCbiostats/data-science-data/raw/master/02_met/met_all.gz"
+tmp <- "met_all.gz"
+dat <- fread(tmp)
+head(dat)
+dat <- as.data.frame(dat)
+```
+#### 2b. Load the station data. 
+```{r}
+stations <- fread("https://noaa-isd-pds.s3.amazonaws.com/isd-history.csv")
+stations <- as.data.frame(stations)
+stations$USAF <- as.integer(stations$USAF)
+stations
+```
+#### 3. Merge the data as we did during the lecture.
+```{r}
+merge(
+  x     = dat,      
+  y     = stations, 
+   by.x  = "USAFID",
+  by.y  = "USAF", 
+   all.x = TRUE,      
+  all.y = FALSE
+)
+```
+### Question 1: Representative station for the US
