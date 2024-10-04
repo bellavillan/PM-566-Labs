@@ -31,7 +31,7 @@ stations <- stations[!is.na(USAF)]
 stations[, n := 1:.N, by = .(USAF)]
 stations <- stations[n == 1,][, n := NULL]
 ```
-#### 3. Merge the data as we did during the lecture.
+#### 3. Merge the data as we did during the lecture. (having trouble rendering because of this code, though given from lecture slides)
 ```{r}
 merge(
   x     = met,      
