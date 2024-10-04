@@ -1,0 +1,34 @@
+---
+title: "Midterm Project"
+author: Isabella Villanueva 
+output: html
+embed-resources: true
+theme: flatly
+---
+
+## Midterm Project: Data Analysis of CDC *Smoking-Attributable Mortality, Morbidity, and Economic Costs (SAMMEC) - Smoking-Attributable Expenditures*
+
+This project seeks to use developed skills from the course "PM 566: Introduction to Health Data Science" like:
+* data wrangling
+* exploratory data analysis 
+* and data visualization
+
+### With these skills, I will be able to explore and seek an answer to the research questions: Which states have the highest prevalence of smoking behavior, mortality, and morbidity as well as which state(s) spend the most on treating smoking-related illnesses?
+
+*Deliverable*: A knitted Quarto written report (HTML or PDF) with embedded tables and figures that is submitted to a project-specific github repository that you create. The report should have the following sections: Introduction (provide background on your dataset and formulated question), Methods (include how and where the data were acquired, how you cleaned and wrangled the data, what tools you used for data exploration), Preliminary Results (provide summary statistics in tabular form and publication-quality figures, take a look at the kable function from knitr to write nice tables in Rmarkdown), and a brief Conclusion about what you found in terms of the formulated question.
+
+In your report, please do not include unformatted output or dataset summaries (e.g. output from head(), str(), etc.). You should summarize these aspects of your data within the text.
+
+
+
+
+```{r}
+if (!file.exists("ezab-8sq5.csv"))
+  download.file(
+    url = "https://data.cdc.gov/resource/ezab-8sq5.csv",
+    destfile = "ezab-8sq5.csv",
+    method   = "libcurl",
+    timeout  = 60
+    )
+sae <- data.table::fread("ezab-8sq5.csv")
+```
