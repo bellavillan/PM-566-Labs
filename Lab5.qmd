@@ -9,6 +9,7 @@ embed-resources: true
 ## Lab 5 - Data Wrangling with the `met` dataset
 
 ### Setup in R
+
 #### 1.Load the data.table (and the dtplyr and dplyr packages if you plan to work with those).
 
 ```{r}
@@ -17,7 +18,9 @@ library(dtplyr)
 library (dplyr)
 library(tidyverse)
 ```
-#### 2. Load the met data from https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz.Load the station data. 
+
+#### 2. Load the met data from https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz.Load the station data.
+
 ```{r}
 stations <- fread("https://noaa-isd-pds.s3.amazonaws.com/isd-history.csv")
 stations[, USAF := as.integer(USAF)]
@@ -31,7 +34,20 @@ stations <- stations[!is.na(USAF)]
 stations[, n := 1:.N, by = .(USAF)]
 stations <- stations[n == 1,][, n := NULL]
 ```
-#### 3. Merge the data as we did during the lecture. (having trouble rendering because of this code, though given from lecture slides)
+
+#### 3. Merge the data as we did during the lecture.
+
+```{r}
+if (!file.exists("met_all.gz"))
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/02_met/met_all.gz",
+    destfile = "met_all.gz",
+    method   = "libcurl",
+    timeout  = 60
+    )
+met <- data.table::fread("met_all.gz")
+```
+
 ```{r}
 merge(
   x = met,      
@@ -53,6 +69,7 @@ met <- merge(
   all.y = FALSE
 )
 ```
+
 ## Question 1: Representative station for the US
 
 What is the median station in terms of temperature, wind speed, and atmospheric pressure? Look for the three weather stations that best represent continental US using the `quantile()` function. Do these three coincide?
@@ -69,6 +86,7 @@ quantiles_df <- data.frame(
 
 quantiles_df
 ```
+
 ```{r}
 any(duplicated(names(met)))
 names(met) <- make.unique(names(met))
@@ -88,6 +106,7 @@ median(median_pressure$USAFID)
 ## Question 2: Representative station per state
 
 Just like the previous question, you are asked to identify what is the most representative, the median, station per state. This time, instead of looking at one variable at a time, look at the euclidean distance. If multiple stations show in the median, select the one located at the lowest latitude.
+
 ```{r}
 state_median_temp <- met %>%
   group_by(STATE) %>%
@@ -119,6 +138,7 @@ state_median_wind_usafid <- met %>%
 
 state_median_wind_usafid
 ```
+
 ```{r}
 state_median_pressure <- met %>%
   group_by(STATE) %>%
@@ -134,11 +154,13 @@ state_median_pressure_usafid <- met %>%
 
 state_median_pressure_usafid
 ```
+
 Knit the doc and save it on GitHub.
 
 ## Question 3: In the middle?
 
-For each state, identify what is the station that is closest to the mid-point of the state. Combining these with the stations you identified in the previous question, use `leaflet()` to visualize all ~100 points in the same figure, applying different colors for those identified in this question.
+For each state, identify what is the station that is closest to the mid-point of the state. Combining these with the stations you identified in the previous question, use `leaflet()` to visualize all \~100 points in the same figure, applying different colors for those identified in this question.
+
 ```{r}
 state_centroids <- median_temp %>%
   group_by(STATE) %>%
@@ -167,6 +189,7 @@ closest_stations <- state_centroids_sf %>%
 
 closest_stations
 ```
+
 ```{r}
 longitude <- st_coordinates(closest_stations)[, 1]
 latitude <- st_coordinates(closest_stations)[, 2]
@@ -174,6 +197,7 @@ latitude <- st_coordinates(closest_stations)[, 2]
 closest_stations2 <- data.frame(stations_sf$STATE, latitude, longitude)
 closest_stations2
 ```
+
 ```{r}
 library(leaflet)
 closest_map <- leaflet() %>%
@@ -204,7 +228,6 @@ closest_map <- closest_map %>%
 closest_map
 ```
 
-
 ```{r}
 library(dplyr)
 average_temp_by_state <- met %>%
@@ -217,17 +240,19 @@ average_temp_by_state <- met %>%
   ))
 print(average_temp_by_state)
 ```
+
 Knit the doc and save it on GitHub.
 
 ## Question 4: Means of means
 
-Using the `quantile()` function, generate a summary table that shows the number of states included, average temperature, wind-speed, and atmospheric pressure by the variable "average temperature level," which you'll need to create. 
+Using the `quantile()` function, generate a summary table that shows the number of states included, average temperature, wind-speed, and atmospheric pressure by the variable "average temperature level," which you'll need to create.
 
-Start by computing the states' average temperature. Use that measurement to classify them according to the following criteria: 
+Start by computing the states' average temperature. Use that measurement to classify them according to the following criteria:
 
-- low: temp < 20
-- Mid: temp >= 20 and temp < 25
-- High: temp >= 25
+-   low: temp \< 20
+-   Mid: temp \>= 20 and temp \< 25
+-   High: temp \>= 25
+
 ```{r}
 library(dplyr)
 average_temp_by_state <- met %>%
@@ -243,44 +268,36 @@ print(average_temp_by_state)
 
 Once you are done with that, you can compute the following:
 
-- Number of entries (records),
-```{r}
-nrow(met)
-```
- 
-- Number of NA entries,
-```{r}
-nrow(met[is.na(met),])
-```
+-   Number of entries (records),
 
-- Number of stations,
-```{r}
-unique_stations <- length(unique(met$USAFID))
-unique_stations
-```
+-   Number of NA entries,
 
-- Number of states included, and
-```{r}
-unique_states <- length(unique(met$STATE))
-unique_states
-```
+-   Number of stations,
 
-- Mean temperature, wind-speed, and atmospheric pressure.
-```{r}
-met_mean <- summarize(met,
-                      mean_temp = mean(temp), 
-                      mean_wind.sp = mean(wind.sp), 
-                      mean_atm.press = mean(atm.press))
-print(met_mean)
-```
+-   Number of states included, and
 
-## Summary Table 
+-   Mean temperature, wind-speed, and atmospheric pressure.
+
+## Summary Table
+
 ```{r}
 met <- met %>%
   mutate(temp_level = cut(temp, 
                           breaks = quantile(temp, probs = seq(0, 1, 0.25), na.rm = TRUE), 
                           include.lowest = TRUE,
                           labels = c("Low", "Medium", "High", "Very High")))
+
+state_avg_temp <- met |>
+  group_by(STATE) |>
+  summarize(
+    avg_temp = mean(temp, na.rm = TRUE),
+    avg_wind = mean(wind.sp, na.rm = TRUE),
+    avg_press = mean(atm.press, na.rm = TRUE),
+    num_entries = n(),
+    num_na = sum(is.na(temp)),  
+    .groups = 'drop'
+  )
+
 summary_table <- met %>%
   filter(temp_level != "Very High") %>%
   group_by(temp_level) %>%
@@ -293,10 +310,9 @@ summary_table <- met %>%
 summary_table
 ```
 
-
 Knit the document, commit your changes, and push them to GitHub. Once you're done, you can email me the link to your repository or, preferably, link to the [Lab 5 Issue](https://github.com/USCbiostats/PM566/issues/68) in your commit message, as follows:
 
-```bash
+``` bash
 git commit -a -m "Finalizing lab 5 https://github.com/USCbiostats/PM566/issues/68"
 ```
 
