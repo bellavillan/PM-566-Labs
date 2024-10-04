@@ -34,24 +34,24 @@ stations <- stations[n == 1,][, n := NULL]
 #### 3. Merge the data as we did during the lecture. (having trouble rendering because of this code, though given from lecture slides)
 ```{r}
 merge(
-  x     = met,      
-  y     = stations, 
-  by.x  = "USAFID",
-  by.y  = "USAF", 
+  x = met,      
+  y = stations, 
+  by.x = "USAFID",
+  by.y = "USAF", 
   all.x = TRUE,      
   all.y = FALSE
-  ) |> nrow()
+) |> nrow()
 
 stations <- stations[!duplicated(stations$USAF), ]
 
 met <- merge(
-  x     = met,      
-  y     = stations, 
-  by.x  = "USAFID",
-  by.y  = "USAF", 
+  x = met,      
+  y = stations, 
+  by.x = "USAFID",
+  by.y = "USAF", 
   all.x = TRUE,      
   all.y = FALSE
-  )
+)
 ```
 ## Question 1: Representative station for the US
 
