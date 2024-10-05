@@ -1,15 +1,164 @@
 ---
-title: "Assignment 2"
+title: "Assignment 2 - Data Visualization and Wrangling"
 author: "Isabella Villanueva"
 output: html
 embed-resources: true
 theme: flatly
 ---
 
-## Assignment 2 - 
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+### Loading in the data `individual` and `regional`
 
 ```{r}
-1 + 1
+if (!file.exists("chs_individual.csv")) #Individual Dataset
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_individual.csv",
+    destfile = "chs_individual.csv",
+    method   = "libcurl",
+    timeout  = 60
+    )
+indiv <- data.table::fread("chs_individual.csv")
+indiv <- as.data.frame(indiv)
+
+if (!file.exists("chs_regional.csv")) #Regional Dataset
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/01_chs/chs_regional.csv",
+    destfile = "chs_regional.csv",
+    method   = "libcurl",
+    timeout  = 60
+    )
+regio <- data.table::fread("chs_regional.csv")
+regio <- as.data.frame(regio)
+```
+
+
+#### Checking the data (dimensions compared with source)
+
+```{r}
+dim(regio)
+dim(indiv)
+```
+
+## Data Wrangling
+
+### 1. Merging the data + Data imputation
+
+```{r}
+socal_combined <- merge(regio,indiv)
+dim(socal_combined) # Shows that no duplicates were formed or data is missing from the merging process, where 27 + 23 = 49 
+```
+
+##### In the case of missing values, impute data using the average amongst individuals with the same values for the `male` and `hispanic` variables. For categorical variables, take the mode.
+
+
+Many times we need to either impute some data, or generate variables by strata.
+
+If we, for example, wanted to impute missing temperature with the daily state average, we could use by together with the data.table::fcoalesce() function:
+
+```{r}
+dat[, temp_imp := fcoalesce(temp, mean(temp, na.rm = TRUE)),
+  by = .(STATE, year, month, day)]
+```
+  In the case of dplyr, we can do the following using dplyr::group_by() together with dplyr::coalesce():
+```{r}
+dat <- dat |>
+  group_by(STATE, year, month, day) |>
+  mutate(
+    temp_imp = coalesce(temp, mean(temp, na.rm = TRUE))
+    ) |> collect()
+```
+
+### 2. Create a new categorical variable named `obesity_level`”using the `BMI` measurement (underweight BMI\<14; normal BMI 14-22; overweight BMI 22-24; obese BMI\>24). 
+```{r}
+socal_combined$obesity_level <- ifelse(socal_combined$bmi < 14.00, "underweight",
+                ifelse(socal_combined$bmi >= 14.00 & socal_combined$bmi < 22.00, "normal",
+                ifelse(socal_combined$bmi >= 22.00 & socal_combined$bmi < 24.00, "overweight",
+                ifelse(socal_combined$bmi >= 24.00, "obese",
+                NA))))
+```
+
+#### To make sure the variable is rightly coded, create a summary table that contains the minimum BMI, maximum BMI, and the total number of observations per category.
+```{r}
+library(dplyr)
+summary_table <- socal_combined %>%
+  group_by(obesity_level) %>%
+  summarise(
+    min_bmi = min(bmi),
+    max_bmi = max(bmi),
+    count = n())
+
+print(summary_table)
+```
+
+### 3. Create another categorical variable named `smoke_gas_exposure` that summarizes second-hand smoke (`smoke`) and having a gas stove (`gasstove`) The variable should have four categories in total.
+```{r}
+socal_combined$smoke_gas_exposure <- ifelse(socal_combined$smoke == 0, "no - SHS exp",
+                ifelse(socal_combined$smoke == 1, "yes - SHS exp.",
+                ifelse(socal_combined$gasstove == 0, "no - gas exp.",
+                ifelse(socal_combined$gasstove == 1, "yes - gas exp.",
+                NA))))
+```
+
+### 4. Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” (an asthma indicator) by town, sex, obesity level, and “smoke_gas_exposure.”
+
+
+
+## Looking at the Data (EDA)
+
+*The primary questions of interest are:*
+
+1.  What is the association between BMI and FEV (forced expiratory volume)?
+
+2.  What is the association between smoke and gas exposure and FEV?
+
+3.  What is the association between PM2.5 exposure and FEV? Follow the EDA checklist from week 3 and the previous assignment. Be sure to focus on the key variables.
+
+## Data Visualization
+
+#### Create the following figures and interpret them. Be sure to include easily understandable axes, titles, and legends.
+
+### 1. Facet plot showing scatterplots with regression lines of BMI vs FEV by “townname”.
+
+```{r}
+
+```
+
+### 2. Stacked histograms of FEV by BMI category and FEV by smoke/gas exposure. Use different color schemes than the ggplot default.
+
+```{r}
+
+```
+
+### 3. Barchart of BMI by smoke/gas exposure.
+
+```{r}
+
+```
+
+### 4. Statistical summary graphs of FEV by BMI and FEV by smoke/gas exposure category.
+
+```{r}
+
+```
+
+### 5. A leaflet map showing the concentrations of PM2.5 mass in each of the CHS communities.
+
+```{r}
+library(leaflet)
+closest_map <- leaflet() %>%
+  addProviderTiles("CartoDB.Positron")
+closest_map <- closest_map %>%
+  addCircleMarkers(data = closest_stations2,
+                   lat = ~latitude,
+                   lng = ~longitude,
+                   color = "red",
+                   radius = 10,
+                   stroke = FALSE,
+                   fillOpacity = 0.8,
+                   label = ~"Closest Station")
+```
+
+### 6. Choose a visualization to examine whether PM2.5 mass is associated with FEV.
+
+```{r}
+
 ```
