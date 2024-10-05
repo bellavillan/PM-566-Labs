@@ -212,22 +212,24 @@ mt_samples |>
 
 ### Question 6.
 
-#### Which words are most used in each of the specialties?
+#### Which words are most used in each of the specialties? How about the most 5 used words?
 ##### You can use `group_by`and `top_n` from dplyr to have the calculations be done within each specialty. Remember to remove stop words.
+
+##### Below shows the top 5 most used words across each of the specialities.
 ```{r}
 library(tidytext)
 library(dplyr)
 library(forcats)
-mt_samples |>
+library(stringr)
+library(ggplot2)
+med_spec_mostused <- mt_samples |>
   unnest_tokens(token, tran) |>
   anti_join(stop_words, by = c("token" = "word")) |>
+  filter(!str_detect(token, "^\\d+$")) |>
   group_by(med_spec) |>
   count(token, sort = TRUE)|>
-  top_n(10, n)
+  top_n(5, n)|>
+  slice_max(order_by = n, n = 5)
+
+print(med_spec_mostused)
 ```
-
-#### How about the most 5 used words?
-```{r}
-
-```
-

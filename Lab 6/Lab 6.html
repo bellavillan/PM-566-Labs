@@ -3502,42 +3502,48 @@ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 </section>
 <section id="question-6." class="level3">
 <h3 class="anchored" data-anchor-id="question-6.">Question 6.</h3>
-<section id="which-words-are-most-used-in-each-of-the-specialties" class="level4">
-<h4 class="anchored" data-anchor-id="which-words-are-most-used-in-each-of-the-specialties">Which words are most used in each of the specialties?</h4>
+<section id="which-words-are-most-used-in-each-of-the-specialties-how-about-the-most-5-used-words" class="level4">
+<h4 class="anchored" data-anchor-id="which-words-are-most-used-in-each-of-the-specialties-how-about-the-most-5-used-words">Which words are most used in each of the specialties? How about the most 5 used words?</h4>
 <section id="you-can-use-group_byand-top_n-from-dplyr-to-have-the-calculations-be-done-within-each-specialty.-remember-to-remove-stop-words." class="level5">
 <h5 class="anchored" data-anchor-id="you-can-use-group_byand-top_n-from-dplyr-to-have-the-calculations-be-done-within-each-specialty.-remember-to-remove-stop-words.">You can use <code>group_by</code>and <code>top_n</code> from dplyr to have the calculations be done within each specialty. Remember to remove stop words.</h5>
+</section>
+<section id="below-shows-the-top-5-most-used-words-across-each-of-the-specialities." class="level5">
+<h5 class="anchored" data-anchor-id="below-shows-the-top-5-most-used-words-across-each-of-the-specialities.">Below shows the top 5 most used words across each of the specialities.</h5>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidytext)</span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(forcats)</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>mt_samples <span class="sc">|&gt;</span></span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_tokens</span>(token, tran) <span class="sc">|&gt;</span></span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">anti_join</span>(stop_words, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;token&quot;</span> <span class="ot">=</span> <span class="st">&quot;word&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(med_spec) <span class="sc">|&gt;</span></span>
-<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(token, <span class="at">sort =</span> <span class="cn">TRUE</span>)<span class="sc">|&gt;</span></span>
-<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">top_n</span>(<span class="dv">10</span>, n)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>med_spec_mostused <span class="ot">&lt;-</span> mt_samples <span class="sc">|&gt;</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest_tokens</span>(token, tran) <span class="sc">|&gt;</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">anti_join</span>(stop_words, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;token&quot;</span> <span class="ot">=</span> <span class="st">&quot;word&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">str_detect</span>(token, <span class="st">&quot;^</span><span class="sc">\\</span><span class="st">d+$&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(med_spec) <span class="sc">|&gt;</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(token, <span class="at">sort =</span> <span class="cn">TRUE</span>)<span class="sc">|&gt;</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">top_n</span>(<span class="dv">5</span>, n)<span class="sc">|&gt;</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(<span class="at">order_by =</span> n, <span class="at">n =</span> <span class="dv">5</span>)</span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(med_spec_mostused)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 416 × 3
+<pre><code># A tibble: 210 × 3
 # Groups:   med_spec [40]
-   med_spec                   token          n
-   &lt;chr&gt;                      &lt;chr&gt;      &lt;int&gt;
- 1 Surgery                    patient     4855
- 2 Surgery                    left        3263
- 3 Surgery                    procedure   3243
- 4 Consult - History and Phy. patient     3046
- 5 Consult - History and Phy. history     2820
- 6 Surgery                    0           2094
- 7 Surgery                    1           2038
- 8 Surgery                    2           1959
- 9 Orthopedic                 patient     1711
-10 Surgery                    anesthesia  1687
-# ℹ 406 more rows</code></pre>
+   med_spec             token         n
+   &lt;chr&gt;                &lt;chr&gt;     &lt;int&gt;
+ 1 Allergy / Immunology history      38
+ 2 Allergy / Immunology noted        23
+ 3 Allergy / Immunology patient      22
+ 4 Allergy / Immunology allergies    21
+ 5 Allergy / Immunology nasal        13
+ 6 Allergy / Immunology past         13
+ 7 Autopsy              left         83
+ 8 Autopsy              inch         59
+ 9 Autopsy              neck         55
+10 Autopsy              anterior     47
+# ℹ 200 more rows</code></pre>
 </div>
 </div>
 </section>
-</section>
-<section id="how-about-the-most-5-used-words" class="level4">
-<h4 class="anchored" data-anchor-id="how-about-the-most-5-used-words">How about the most 5 used words?</h4>
 </section>
 </section>
 </section>
