@@ -1,12 +1,14 @@
 ---
 title: "Assignment 2 - Data Visualization and Wrangling"
 author: "Isabella Villanueva"
-output: html
+output:
+  html_document:
+    df_print: paged
 embed-resources: true
 theme: flatly
 ---
 
-### Loading in the data `individual` and `regional`
+### Loading in the `individual` and `regional` datasets
 
 ```{r}
 if (!file.exists("chs_individual.csv")) #Individual Dataset
@@ -30,7 +32,6 @@ regio <- data.table::fread("chs_regional.csv")
 regio <- as.data.frame(regio)
 ```
 
-
 #### Checking the data (dimensions compared with source)
 
 ```{r}
@@ -49,25 +50,37 @@ dim(socal_combined) # Shows that no duplicates were formed or data is missing fr
 
 ##### In the case of missing values, impute data using the average amongst individuals with the same values for the `male` and `hispanic` variables. For categorical variables, take the mode.
 
+```{r}
+library(dplyr)
 
-Many times we need to either impute some data, or generate variables by strata.
+numeric_cols <- c("agepft", "height", "weight", "bmi", "fev", "fvc", "mmef","pm2_5_fr","no_24hr") #identifying numeric columns
+categorical_cols <- c("asthma", "active_asthma", "father_asthma", "mother_asthma", #identifying categorical columns
+                      "wheeze", "hayfever", "allergy", "educ_parent", "smoke", 
+                      "pets", "gasstove")
 
-If we, for example, wanted to impute missing temperature with the daily state average, we could use by together with the data.table::fcoalesce() function:
+mode_function <- function(x) {
+  uniq_x <- unique(x)
+  uniq_x[which.max(tabulate(match(x, uniq_x)))]
+}
+
+socal_combined <- socal_combined |>
+  group_by(male, hispanic)|>
+  mutate(across(all_of(numeric_cols), 
+                ~ coalesce(., mean(., na.rm = TRUE)))) |>
+  mutate(across(all_of(categorical_cols), 
+                ~ coalesce(., mode_function(.))))
+
+library(DT)
+datatable((socal_combined), class = 'cell-border stripe')
+```
 
 ```{r}
-dat[, temp_imp := fcoalesce(temp, mean(temp, na.rm = TRUE)),
-  by = .(STATE, year, month, day)]
-```
-  In the case of dplyr, we can do the following using dplyr::group_by() together with dplyr::coalesce():
-```{r}
-dat <- dat |>
-  group_by(STATE, year, month, day) |>
-  mutate(
-    temp_imp = coalesce(temp, mean(temp, na.rm = TRUE))
-    ) |> collect()
+colSums(is.na(socal_combined))
+any(is.na(socal_combined))
 ```
 
-### 2. Create a new categorical variable named `obesity_level`”using the `BMI` measurement (underweight BMI\<14; normal BMI 14-22; overweight BMI 22-24; obese BMI\>24). 
+### 2. Create a new categorical variable named `obesity_level` using the `BMI` measurement (underweight BMI\<14; normal BMI 14-22; overweight BMI 22-24; obese BMI\>24).
+
 ```{r}
 socal_combined$obesity_level <- ifelse(socal_combined$bmi < 14.00, "underweight",
                 ifelse(socal_combined$bmi >= 14.00 & socal_combined$bmi < 22.00, "normal",
@@ -77,6 +90,7 @@ socal_combined$obesity_level <- ifelse(socal_combined$bmi < 14.00, "underweight"
 ```
 
 #### To make sure the variable is rightly coded, create a summary table that contains the minimum BMI, maximum BMI, and the total number of observations per category.
+
 ```{r}
 library(dplyr)
 summary_table <- socal_combined %>%
@@ -86,21 +100,77 @@ summary_table <- socal_combined %>%
     max_bmi = max(bmi),
     count = n())
 
-print(summary_table)
+library(DT)
+datatable((summary_table), class = 'cell-border stripe')
 ```
 
 ### 3. Create another categorical variable named `smoke_gas_exposure` that summarizes second-hand smoke (`smoke`) and having a gas stove (`gasstove`) The variable should have four categories in total.
+
 ```{r}
-socal_combined$smoke_gas_exposure <- ifelse(socal_combined$smoke == 0, "no - SHS exp",
-                ifelse(socal_combined$smoke == 1, "yes - SHS exp.",
-                ifelse(socal_combined$gasstove == 0, "no - gas exp.",
-                ifelse(socal_combined$gasstove == 1, "yes - gas exp.",
+socal_combined$smoke_gas_exposure <- ifelse(socal_combined$smoke == 0 & socal_combined$gasstove == 1, "only gas exposure",
+                ifelse(socal_combined$smoke == 1 & socal_combined$gasstove == 0, "only smoke exposure",
+                ifelse(socal_combined$smoke == 0 & socal_combined$gasstove == 0, "no smoke or gas exposure",
+                ifelse(socal_combined$smoke == 1 & socal_combined$gasstove == 1, "both smoke and gas exposure",
                 NA))))
 ```
 
-### 4. Create four summary tables showing the average (or proportion, if binary) and sd of “Forced expiratory volume in 1 second (ml)” (an asthma indicator) by town, sex, obesity level, and “smoke_gas_exposure.”
+### 4. Create four summary tables showing the average (or proportion, if binary) and standard deviation of “Forced expiratory volume in 1 second (ml) (FEV)” — an asthma indicator
 
+#### — by `town`,
 
+```{r}
+summary_table_town <- socal_combined %>%
+  group_by(townname) %>%
+  summarise(
+    avg_fev = mean(fev), #calculate average fev by town
+    sd_fev = sd(fev), #calculate sd of fev by town
+    count = n()) #count number of observations in each town
+
+library(DT)
+datatable((summary_table_town), class = 'cell-border stripe')
+```
+
+#### — by `sex`,
+
+```{r}
+summary_table_sex <- socal_combined %>%
+  group_by(male) %>%
+  summarise(
+    avg_fev = mean(fev), #calculate average fev by sex (male= 1, female = 0)
+    sd_fev = sd(fev), #calculate sd of fev by sex
+    count = n()) #count number of observations from each sex group
+
+library(DT)
+datatable((summary_table_sex), class = 'cell-border stripe')
+```
+
+#### — by `obesity_level`, and
+
+```{r}
+summary_table_ob_lev <- socal_combined %>%
+  group_by(obesity_level) %>%
+  summarise(
+    avg_fev = mean(fev), #calculate average fev by categorical variable `obesity_level`
+    sd_fev = sd(fev), #calculate sd of fev by categorical variable `obesity_level`
+    count = n()) #count number of observations from each `obesity_level` category
+
+library(DT)
+datatable((summary_table_ob_lev), class = 'cell-border stripe')
+```
+
+#### — by `smoke_gas_exposure`
+
+```{r}
+summary_table_sge <- socal_combined %>%
+  group_by(smoke_gas_exposure) %>%
+  summarise(
+    avg_fev = mean(fev), #calculate average fev by categorical variable `smoke_gas_exposure`
+    sd_fev = sd(fev), #calculate sd of fev by categorical variable `smoke_gas_exposure`
+    count = n()) #count number of observations from each `smoke_gas_exposure` category
+
+library(DT)
+datatable((summary_table_sge), class = 'cell-border stripe')
+```
 
 ## Looking at the Data (EDA)
 
@@ -119,46 +189,228 @@ socal_combined$smoke_gas_exposure <- ifelse(socal_combined$smoke == 0, "no - SHS
 ### 1. Facet plot showing scatterplots with regression lines of BMI vs FEV by “townname”.
 
 ```{r}
+library(ggplot2)
 
+facet_plot_bmi_fev <- ggplot(socal_combined, aes(x = bmi, y = fev, color = townname)) +
+  geom_point(alpha = 0.6) +  
+  geom_smooth(method = "lm", se = FALSE, color = "black") +  # Regression line equation
+  facet_wrap(~ townname) +  # Creation of a facet by each townname
+  labs(
+    title = "Scatterplot of BMI vs FEV by Town",
+    x = "Body Mass Index (BMI)",
+    y = "Forced Expiratory Volume in 1 Second (FEV) (ml)",
+    color = "Town"
+  ) +
+  theme_minimal() 
+suppressMessages(print(facet_plot_bmi_fev))
 ```
+
+#### Interpretation of BMI vs FEV by Town Visualization (Faceted Scatterplot)
+
+##### Regression Line Slopes
+
+The regression line added to these facet plots can indicate a positive correlation between the two variables: "BMI" and "FEV". Faceted by town, we can see that the towns Alpine and Riverside have flatter regression line slopes (i.e. more parallel to the x-axis). This flat line indicates no association between the response variable (or dependent variable, FEV) and the explanatory variable (or independent variable, BMI) in these two towns. The other 10 towns with steeper regression line slopes, indicating a more positive association between two variables. This means that as BMI increases (the progression from underweight to obese), the FEV value is likely to increase as well. Lake Elsinore and Upland have the steepest regression line slopes.
+
+##### Line Length and BMI distributions Among Each Town Population
+
+The line length of each of these plots show the range of BMI variability within each town, and those with shorter lines can be inferred to have populations with more "normal" BMI values than those with longer lines.
+
+##### Impact of Extreme Values on Data Representation
+
+It is worth noting that the towns Riverside, Lompoc, and San Dimas each have a single extreme value (outliers are closer to the data, yet separated — these values are extreme because of how much further these values are from the majority of the data) that is sure to skew the representative data.
 
 ### 2. Stacked histograms of FEV by BMI category and FEV by smoke/gas exposure. Use different color schemes than the ggplot default.
 
 ```{r}
-
+stack_hstg_fev_bmi <- ggplot(socal_combined, aes(x = fev, fill = obesity_level)) +
+  geom_histogram(position = "stack", bins = 30, alpha = 0.7) +
+  scale_fill_brewer(palette = "Pastel1") +
+labs(
+    title = "Stacked Histogram of FEV by BMI Category",
+    x = "Forced Expiratory Volume in 1 Second (FEV) (ml)",
+    y = "Count",
+    fill = "BMI Category"
+  ) +
+  theme_minimal()
+suppressMessages(print(stack_hstg_fev_bmi))
 ```
 
-### 3. Barchart of BMI by smoke/gas exposure.
+#### Interpretation of FEV by BMI Category Visualization (Stacked Histogram)
+
+##### Comparison of the Number of Observations per Category
+
+This histogram represents the forced expiratory volume (FEV) and each histogram is stacked upon each other by the BMI category from underweight to obese. From this visualization, the count of individuals that fall within the 'normal' BMI category is unparalleled in scale compared to the other 3 categories ("normal" n = 975):
+
+-   "underweight" n = 35,
+
+-   "overweight" n = 87
+
+-   "obese" n = 103.
+
+##### Distribution Descriptions of Each Category
+
+This visualization illustrates the "normal" category to closely follow (but not quite) a normal distribution, while the other three distributions are skewed both in the negative and positive direction. The other 3 extreme categories of obesity measurement have a multimodal shape, and show that these other BMI categories are not reflective to the majority of the population.
 
 ```{r}
-
+stack_hstg_fev_sge <- ggplot(socal_combined, aes(x = fev, fill = smoke_gas_exposure)) +
+  geom_histogram(position = "stack", bins = 30, alpha = 0.7) +
+  scale_fill_manual(
+    values = c("sienna1", "sienna4", "hotpink1", "hotpink4"))+
+labs(
+    title = "Stacked Histogram of FEV by Smoke/Gas Exposure",
+    x = "Forced Expiratory Volume in 1 Second (FEV) (ml)",
+    y = "Count",
+    fill = "Smoke/Gas Exposure"
+  ) +
+theme_minimal()
+suppressMessages(print(stack_hstg_fev_sge))
 ```
+
+#### Interpretation of FEV by Smoke and Gas Exposure Visualization (Stacked Histogram)
+
+
+##### Distribution Descriptions of Each Category
+
+In this visualization, it is apparent that the distributions of the "both smoke and gas exposure", "no smoke or gas exposure", and "only gas exposure" have a resemblance to a normal distribution. The "only smoke exposure" category is more flat than the other 3 categories, due to the small size of this category's number of observations (n = 36).
+
+##### Drawing Conclusions Based on the Data's Visualization
+
+"Both smoke and gas exposure" has the greatest value of FEV, yet the second greatest values of FEV is the "no smoke or gas exposure", leading to the conclusion that there may not be a strong correlation between the two graphed variables. If there were a stronger correlation between to the two variables of FEV and Smoke/Gas Exposure, the "no smoke or gas exposure" category would be the lowest distribution and number of observations if measured by FEV. Additionally, the "only gas" and "only smoke" exposures would be in similar distributions, below the "both smoke and gas exposure".
+
+### 3. Barchart of BMI by Smoke and Gas Exposure.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(wesanderson)
+
+socal_combined <- socal_combined %>%
+  mutate(obesity_level = factor(obesity_level, 
+                                 levels = c("underweight", "normal", "overweight", "obese")))
+socal_combined %>%
+  ggplot(aes(obesity_level, fill = smoke_gas_exposure))+
+  geom_bar(position = "dodge",
+           alpha = 0.5)+
+  scale_fill_manual(values = wes_palette("Royal2", n = 4))+
+labs(
+    title = "Barchart of BMI by Smoke and Gas Exposure",
+    x = "BMI Values",
+    y = "Count",
+    fill = "Smoke and Gas Exposure"
+  ) +
+theme_minimal()
+```
+#### Interpretation of BMI Categories by Smoke and Gas Exposure Visualization (Bar Chart)
+
+This bar chart displays two categorical variables: `obesity_level` (which are ranges of BMI measurement values to characterize each individual's obesity status) and `smoke_gas_exposure` (the exposure of second-hand smoke and/or gas stoves). 
+
+These two variables were then graphed to display the overlapping of the two measurements, where we can notice the previously-found high value of individuals with normal BMI values, and we notice that these individuals are also in the same group of those who have only been exposure to gas stoves. Interestingly, the remaining three categories of underweight, overweight, and obese all have low numbers of individuals within their categories, leading to the belief that the correlation between BMI and smoke and gas exposure cannot be determined by this visualization. In these categories, we can see "only gas exposure" is the highest of the four categories from "smoke and gas exposure". 
 
 ### 4. Statistical summary graphs of FEV by BMI and FEV by smoke/gas exposure category.
 
 ```{r}
-
+socal_combined <- socal_combined %>%
+  mutate(obesity_level = factor(obesity_level, 
+                                 levels = c("underweight", "normal", "overweight", "obese")))
+socal_combined %>%
+  ggplot(aes(fev, fill = obesity_level))+
+  geom_boxplot(alpha = 0.5)+
+  scale_fill_manual(values = wes_palette("FantasticFox1", n = 4))+
+labs(
+    title = "Boxplot of FEV by BMI Categories",
+    x = "Forced Expiratory Volume in 1 Second (FEV) (ml)",
+    y = "Count",
+    fill = "BMI Categories"
+  ) +
+theme_minimal()
 ```
+#### Interpretation of FEV by BMI Categories Visualization (Box Plot)
 
-### 5. A leaflet map showing the concentrations of PM2.5 mass in each of the CHS communities.
+##### Why a Box Plot (aka Box-and-Whisker Plot)
+The choice of displaying a statistical summary of the variables of interest in a box plot was intentional to showcase important descriptive statistics like the interquartile range (IQR), the median, the maximum and minimum values, as well as the outlier and extreme values. 
+
+##### Anatomy of a Box Plot
+The interquartile range (IQR) can be summarized in a box plot by the middle rectangular shape and described the values between the lower quartile (25%) and the upper quartile (75%). Within this box lies a bolded line, which represents the median value of the distribution. On either side of this box, the lines (equidistant from each side of the box if normally distributed) end, making the minimum value at the left end and the maximum value at the right end. The circles/dot at either end of these lines symbolize the outlier (outside of the majority, but still close) and extreme (further from the majority) values. The distribution can be described with specificity from these descriptive statistics. 
+
+#### Analysis of the FEV by BMI Box Plot
+This box plot displays four separate box plots within one data visualization, each representing a different BMI category. The underweight box plot (top) has a relatively normal distribution, with the median being centered in its box, the lines having approximately equal lengths, yet there is the presence of three outlier values. The obese category is similar in description, though a smaller IQR and lower median for its distribution. 
+
+The normal and overweight categories have skewed medians, positive and negative, respectively. Yet, the overweight category has significantly more outlier and extreme values on either side of its distribution, leading to the conclusion that this category may be not be specific enough to lead to strong statistical evidence for significance. 
+
+```{r}
+socal_combined %>%
+  ggplot(aes(fev, fill = smoke_gas_exposure))+
+  geom_boxplot(alpha = 0.5)+
+  scale_fill_manual(values = wes_palette("Royal1", n = 4))+
+labs(
+    title = "Boxplot of FEV by Smoke and Gas Exposure",
+    x = "Forced Expiratory Volume in 1 Second (FEV) (ml)",
+    y = "Count",
+    fill = "Smoke and Gas Exposure"
+  ) +
+theme_minimal()
+```
+#### Interpretation of FEV by Smoke and Gas Exposure Visualization (Box Plot)
+
+This series of box plots is more consistent with one another, where each of these categories have similar IQRs. The "only smoke exposure" box plot is less similar than the rest, as it has a negatively skewed median, and a smaller IQR range than the other 3 categories, and a smaller line lengths, most likely due to the small number of individuals in this category. 
+
+The "only gas exposure" box plot and "no smoke or gas exposure" categories have outlier and extreme values. 
+
+Because all 4 of these box plots have approximately similar placements in the FEV values (x-axis), a conclusion can be drawn to the lack of correlation between FEV and smoke and gas exposure, where correlation of at least one FEV to smoke and gas exposure would result in one value being signficantly different from the others. 
+
+### 5. A leaflet map showing the concentrations of PM~2.5~ mass in each of the CHS communities.
 
 ```{r}
 library(leaflet)
-closest_map <- leaflet() %>%
-  addProviderTiles("CartoDB.Positron")
-closest_map <- closest_map %>%
-  addCircleMarkers(data = closest_stations2,
-                   lat = ~latitude,
-                   lng = ~longitude,
-                   color = "red",
-                   radius = 10,
-                   stroke = FALSE,
-                   fillOpacity = 0.8,
-                   label = ~"Closest Station")
-```
+pal <- colorNumeric(palette = "YlOrRd", domain = socal_combined$pm25_mass) #gradient to show concentration density of PM~2.5~
 
-### 6. Choose a visualization to examine whether PM2.5 mass is associated with FEV.
+leaflet(data = socal_combined) %>%
+  addTiles() %>%  
+  addCircleMarkers(
+    lng = ~lon, lat = ~lat, 
+    radius = ~sqrt(pm25_mass) * 2,
+    color = ~pal(pm25_mass),  
+    fillOpacity = 0.7, 
+    popup = ~paste("<strong>Town:</strong>", townname, "<br>",
+                   "<strong>PM2.5 Mass:</strong>", pm25_mass, "<br>",
+                   "<strong>Latitude:</strong>", lat, "<br>",
+                   "<strong>Longitude:</strong>", lon)
+  ) %>%
+  addLegend(
+    "bottomright", 
+    pal = pal, 
+    values = ~pm25_mass,
+    title = "PM2.5 Concentration in CHS Communities",
+    opacity = 0.7
+  )
+```
+#### Interpretation of PM~2.5~ Mass Concentration in CHS Communities (Map) 
+Using the gradient to signify the density in concentration of the particulate matter (PM~2.5~), it can be observed that the community with the greatest PM~2.5~ mass concentration is Mira Loma. Geographically, the mass concentration densities are highest inland near the central point of Mira Loma, but as we expand further in all directions and further from densely populated areas with great sources of air pollutants like air and car traffic, we can notice a dissipation in concentration with lighter color to signify this change. When we focus closer in Mira Loma's densely concentrated particulate mass values, we can notice, at least 6 separate airports/ land air strips in its radius and 3 major freeways surrounding this one community.
+
+This data points to the likelihood of negative health outcomes for this community, likely from the physiological stress (causing cortisol overproduction) induced from the chronic noise emitting from airplanes, helicopters, cars, and other emissions that also produce particulate matter mass (which is likely to cause negative asthmatic outcomes). The over-production of cortisol can lead to atherosclerosis — a chronic inflammatory disease that causes arteries to narrow and thicken due to a buildup of plaque, leading to negative health outcomes like heart disease, more specifically: heart attacks, strokes, aneurysms, or blood clots. 
+
+### 6. Choose a visualization to examine whether PM~2.5~ mass is associated with FEV.
 
 ```{r}
+library(ggplot2)
 
+correlation_coefficient <- cor(socal_combined$pm25_mass, socal_combined$fev)
+
+scatterplot_fev_pm25 <- ggplot(socal_combined, aes(x = pm25_mass, y = fev)) +
+  geom_point(alpha = 0.6) +  
+  geom_smooth(method = "lm", se = TRUE, color = "red") + 
+  labs(
+    title = "Scatterplot of PM2.5 Mass vs FEV",
+    x = "PM~2.5~ Mass (µg/m³)",
+    y = "Forced Expiratory Volume in 1 Second (FEV) (ml)"
+  ) +
+  theme_minimal()+
+  annotate("text", x = max(socal_combined$pm25_mass), y = max(socal_combined$fev), 
+           label = paste("Correlation: ", round(correlation_coefficient, 2)),
+           hjust = 1, vjust = 1, size = 5, color = "red")
+
+suppressMessages(print(scatterplot_fev_pm25))
 ```
+
+#### Interpretation of the Association of PM~2.5~ mass with FEV (Scatterplot)
+Using the regression line and the correlation coefficient to signify the strength of association between the two variables: PM~2.5~ mass and FEV, we can conclude that there is little correlation with the two variables, and even a negative association. This scatterplot is meant to visualize the individual points of the two variables, while the regression line is meant to illustrate in a more specific manner to show the general trend between these two variables of interest. 
