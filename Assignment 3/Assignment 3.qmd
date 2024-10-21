@@ -1,0 +1,73 @@
+---
+title: "Assignment 3 - Text Mining"
+author: "Isabella Villanueva"
+output:
+  html_document:
+    df_print: paged
+embed-resources: true
+theme: flatly
+---
+
+### Loading in the dataset 
+```{r}
+if (!file.exists("pubmed.csv")) #PubMed Dataset
+  download.file(
+    url = "https://raw.githubusercontent.com/USCbiostats/data-science-data/master/03_pubmed/pubmed.csv",
+    destfile = "pubmed.csv",
+    method   = "libcurl",
+    timeout  = 60
+    )
+pubmed <- data.table::fread("pubmed.csv")
+pubmed <- as.data.frame(pubmed)
+
+pubmed_summary <- head(pubmed)
+library(DT)
+datatable((pubmed_summary), class = 'cell-border stripe')
+```
+### Loading the necessary packages
+```{r}
+suppressWarnings(suppressMessages(library(dplyr)))
+suppressWarnings(suppressMessages(library(tidytext)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+suppressWarnings(suppressMessages(library(forcats)))
+suppressWarnings(suppressMessages(library(stringr)))
+```
+
+### 1. Tokenize the abstracts and count the number of each token. Do you see anything interesting? Does removing stop words change what tokens appear as the most frequent? What are the 5 most common tokens for each search term after removing stopwords?
+```{r}
+pubmed %>%
+  unnest_tokens(token, abstract) %>%
+  count(token, sort = TRUE) %>% #Counting the number of each token in abstracts 
+  top_n(10,n) %>% #Showing the top 10 tokens
+  ggplot(aes(n, fct_reorder(token, n))) +
+  geom_col()
+```
+
+```{r}
+pubmed |>
+  unnest_tokens(token, abstract) |>
+  anti_join(stop_words, by = c("token" = "word")) |> #Removal of stop_words
+  filter(!str_detect(token, "^\\d+$")) |> #Removal of numbers
+  count(token, sort = TRUE) |>
+  top_n(10,n)|>
+  ggplot(aes(n, fct_reorder(token, n))) +
+  geom_col()
+```
+
+### 2. Tokenize the abstracts into bigrams. Find the 10 most common bigrams and visualize them with ggplot2.
+
+```{r}
+pubmed |>
+  unnest_ngrams(ngram,abstract, n =2) |> #Instead of creating words into tokens, making two word phrases = bigrams
+  count(ngram, sort = TRUE) |>
+  top_n(10,n)|>
+  ggplot(aes(n, fct_reorder(ngram, n))) +
+  geom_col()
+```
+
+### 3. Calculate the TF-IDF value for each word-search term combination (here you want the search term to be the “document”). What are the 5 tokens from each search term with the highest TF-IDF value? How are the results different from the answers you got in question 1?
+
+```{r}
+
+```
+
