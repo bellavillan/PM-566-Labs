@@ -31,18 +31,26 @@ suppressWarnings(suppressMessages(library(tidytext)))
 suppressWarnings(suppressMessages(library(ggplot2)))
 suppressWarnings(suppressMessages(library(forcats)))
 suppressWarnings(suppressMessages(library(stringr)))
+suppressWarnings(suppressMessages(library(textdata)))
 ```
 
-### 1. Tokenize the abstracts and count the number of each token. Do you see anything interesting? Does removing stop words change what tokens appear as the most frequent? What are the 5 most common tokens for each search term after removing stopwords?
+## Text Mining 
+
+### 1. Tokenize the abstracts and count the number of each token. Do you see anything interesting?
+
+When looking at the count for the top 10 tokens of the abstracts without removing the stop words (filler words like the, and, of), stop words are the most used words -- where "covid" and "19" are the only words with substantial meaning in these top 10 tokens. 
 ```{r}
 pubmed %>%
   unnest_tokens(token, abstract) %>%
   count(token, sort = TRUE) %>% #Counting the number of each token in abstracts 
   top_n(10,n) %>% #Showing the top 10 tokens
   ggplot(aes(n, fct_reorder(token, n))) +
-  geom_col()
+  geom_col(fill = "darkolivegreen3")
 ```
 
+#### Does removing stop words change what tokens appear as the most frequent? What are the 5 most common tokens for each search term after removing stopwords?
+
+Removing the stop words does change what tokens appear as the most frequent, now with the words "covid", "patients", "cancer", "prostate", and "disease" all being the leading tokens. 
 ```{r}
 pubmed |>
   unnest_tokens(token, abstract) |>
@@ -51,7 +59,7 @@ pubmed |>
   count(token, sort = TRUE) |>
   top_n(10,n)|>
   ggplot(aes(n, fct_reorder(token, n))) +
-  geom_col()
+  geom_col(fill = "cadetblue3")
 ```
 
 ### 2. Tokenize the abstracts into bigrams. Find the 10 most common bigrams and visualize them with ggplot2.
@@ -62,12 +70,99 @@ pubmed |>
   count(ngram, sort = TRUE) |>
   top_n(10,n)|>
   ggplot(aes(n, fct_reorder(ngram, n))) +
-  geom_col()
+  geom_col(fill = "cornflowerblue")
 ```
 
-### 3. Calculate the TF-IDF value for each word-search term combination (here you want the search term to be the “document”). What are the 5 tokens from each search term with the highest TF-IDF value? How are the results different from the answers you got in question 1?
+### 3. Calculate the TF-IDF value for each word-search term combination. What are the 5 tokens from each search term with the highest TF-IDF value? How are the results different from the answers you got in question 1?
+
+Below is the table that shows the top 5 tokens from each search term with the highest TF-IDF value. 
+
+These results are different from question 1 because rather than counting the number of times each words appears in the dataset `pubmed`, this counts each search term (i.e. covid, preeclampsia, cystic fibrosis (from the variable column `term`)'s most common tokens, and orders them based off their TF-IDF scores. 
+```{r}
+pubmed_tf_idf <- pubmed |>
+  unnest_tokens(word, abstract) |>
+  count(term, word) |>
+  bind_tf_idf(word, term, n)
+
+top_5_tokens <- pubmed_tf_idf |>
+  group_by(term)|>
+  slice_max(tf_idf, n = 5) |>           
+  arrange(term, desc(tf_idf)) 
+
+library(DT)
+datatable(top_5_tokens, 
+          class = 'cell-border stripe',
+          options = list(pageLength = 10,         
+                         lengthMenu = c(5, 10, 20, 50), 
+                         searching = TRUE,      
+                         ordering = TRUE))
+```
+## Sentiment Analysis
+
+### 1. Perform a sentiment analysis using the NRC lexicon. What is the most common sentiment for each search term? 
+
+Visualized in the table below are the top 3 sentiments for each search term. Some have a mixture of "positive" and "negative" sentiments, while others have "fear" or "anticipation." 
+```{r}
+nrc_lexicon <- get_sentiments("nrc")
+pubmed_sentiments <- pubmed |>
+  unnest_tokens(word, abstract) |>
+  inner_join(nrc_lexicon, by = "word", relationship = "many-to-many")
+
+top3_sentiments <- pubmed_sentiments |>
+  count(term, sentiment, sort = TRUE) |>
+  group_by(term)|>
+  slice_max(n, n = 3) |>
+  ungroup()
+
+top3_sentiments
+```
+
+#### What if you remove "positive" and "negative" from the list?
+If "positive" and "negative" sentiments are removed from the list, the common sentiments now become "fear", "trust", "sadness", or "disgust". Now, there is more description behind solely "positive" or "negative". 
+```{r}
+common_sentiment_exclusive <- pubmed_sentiments|>
+  filter(!sentiment %in% c("positive", "negative")) |>
+  count(term, sentiment, sort = TRUE) |>
+  group_by(term) |>
+  slice_max(n, n = 3) |>
+  ungroup()
+
+common_sentiment_exclusive #Removal of the "positive" and "negative" sentiments
+```
+
+### 2. Now perform a sentiment analysis using the AFINN lexicon to get an average positivity score for each abstract (hint: you may want to create a variable that indexes, or counts, the abstracts).
 
 ```{r}
+afinn_lexicon <- get_sentiments("afinn")
+pubmed_sentiments_afinn <- pubmed |>
+  mutate(abstract_id = row_number()) |>  # Create an abstract index
+  unnest_tokens(word, abstract) |>
+  inner_join(afinn_lexicon, by = "word")
 
+average_positivity <- pubmed_sentiments_afinn |> #Calculating the average positivity 
+  group_by(abstract_id) |>
+  summarize(avg_score = mean(value, na.rm = TRUE)) |>
+  ungroup()
+
+average_positivity
+```
+
+#### Create a visualization that shows these scores grouped by search term. Are any search terms noticeably different from the others?
+
+The search term "prostate cancer" is noticeably different the other search terms as well as "cystic fibrosis" for opposite reasons. The search term "prostate cancer" has the smallest IQR (reflected in the size the box plot). The search term "cystic fibrosis" has a noticeably larger IQR, but this search term stands out the most among the other search terms because its difference in median value (reflected in the placement of the horizontal line in the middle of the box plot).
+
+```{r}
+pubmed_with_scores <- pubmed %>%
+  mutate(abstract_id = row_number()) %>%
+  left_join(average_positivity, by = "abstract_id")
+#Plotting visualization 
+ggplot(pubmed_with_scores, aes(x = term, y = avg_score, fill = term)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 1) +
+  labs(title = "Distribution of Average Positivity Scores by Search Term",
+       x = "Search Term",
+       y = "Average Positivity Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  guides(fill = FALSE)
 ```
 
