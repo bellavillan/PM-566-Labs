@@ -117,7 +117,7 @@ system.time({
 
 # SQL
 Setup a temporary database by running the following chunk
-```{r, eval = FALSE}
+```{r}
 library(RSQLite)
 library(DBI)
 
